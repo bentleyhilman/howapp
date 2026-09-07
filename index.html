@@ -50,7 +50,6 @@
       position: relative;
     }
 
-    /* Vibrant Ambient Background Glows */
     .bg-grid {
       position: absolute;
       inset: 0;
@@ -104,7 +103,6 @@
       100% { transform: translate(40px, 30px) scale(1.1); }
     }
 
-    /* Main Container */
     .app-container {
       position: relative;
       z-index: 10;
@@ -127,7 +125,6 @@
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
-    /* Modals & Overlays */
     .overlay {
       position: fixed;
       inset: 0;
@@ -239,7 +236,6 @@
       box-shadow: 0 8px 25px rgba(244, 63, 94, 0.5);
     }
 
-    /* Sidebar Styling */
     .sidebar {
       width: 320px;
       background: rgba(10, 14, 23, 0.5);
@@ -258,31 +254,23 @@
 
     .brand {
       display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: var(--accent-gradient);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 1.2rem;
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+      flex-direction: column;
+      gap: 2px;
     }
 
     .brand-title {
       font-weight: 800;
-      font-size: 1.3rem;
+      font-size: 1.35rem;
       letter-spacing: -0.5px;
       background: var(--accent-gradient);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+    }
+
+    .user-badge-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .user-badge {
@@ -293,19 +281,43 @@
       padding: 2px 8px;
       border-radius: 20px;
       border: 1px solid rgba(6, 182, 212, 0.2);
-      margin-top: 2px;
       display: inline-block;
     }
 
+    .edit-user-btn {
+      background: transparent;
+      border: none;
+      padding: 0;
+      box-shadow: none;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .edit-user-btn:hover {
+      color: #fff;
+      transform: scale(1.1);
+      background: transparent;
+      box-shadow: none;
+    }
+
     .add-btn {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       padding: 0;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.2rem;
+      line-height: 0;
+      flex-shrink: 0;
+    }
+
+    .add-btn span {
+      display: block;
+      transform: translateY(-1px);
     }
 
     .room-list-header {
@@ -413,7 +425,6 @@
       box-shadow: none;
     }
 
-    /* Main Chat Area */
     .chat-area {
       flex: 1;
       display: flex;
@@ -462,7 +473,6 @@
       scroll-behavior: smooth;
     }
 
-    /* Scrollbar Polish */
     .messages-container::-webkit-scrollbar,
     .room-list::-webkit-scrollbar {
       width: 6px;
@@ -553,7 +563,6 @@
       box-shadow: 0 6px 20px rgba(168, 85, 247, 0.3);
     }
 
-    /* Input Dock */
     .input-area {
       padding: 20px 24px;
       background: rgba(10, 14, 23, 0.4);
@@ -589,7 +598,6 @@
       to { opacity: 1; }
     }
 
-    /* Responsive Mobile UI */
     @media (max-width: 768px) {
       .app-container {
         flex-direction: column;
@@ -616,24 +624,21 @@
 </head>
 <body>
 
-  <!-- Dynamic Ambient Glow Objects -->
   <div class="bg-grid"></div>
   <div class="glow-sphere glow-1"></div>
   <div class="glow-sphere glow-2"></div>
   <div class="glow-sphere glow-3"></div>
 
-  <!-- Screen 1: Username Setup Modal -->
   <div id="username-modal" class="overlay">
     <div class="modal">
-      <h2>Welcome to HowApp</h2>
-      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">Experience seamless real-time conversations across all your devices.</p>
-      <label>Choose Your Display Name</label>
+      <h2 id="username-modal-title">Welcome to HowApp</h2>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">Enter a display name to start chatting across devices.</p>
+      <label>Display Name</label>
       <input type="text" id="username-input" placeholder="e.g. Alex" autofocus />
-      <button onclick="saveUsername()">Get Started →</button>
+      <button onclick="saveUsername()">Save Name →</button>
     </div>
   </div>
 
-  <!-- Screen 2: Room Passcode Entry Modal -->
   <div id="passcode-modal" class="overlay hidden">
     <div class="modal">
       <h2>Protected Channel</h2>
@@ -647,7 +652,6 @@
     </div>
   </div>
 
-  <!-- Screen 3: Create Room Modal -->
   <div id="create-room-modal" class="overlay hidden">
     <div class="modal">
       <h2>Create New Channel</h2>
@@ -664,46 +668,53 @@
     </div>
   </div>
 
-  <!-- Screen 4: Admin Manage Room Modal -->
-  <div id="admin-room-modal" class="overlay hidden">
+  <div id="admin-auth-modal" class="overlay hidden">
     <div class="modal">
-      <h2>Channel Settings</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted);">Enter Admin Password to apply changes.</p>
+      <h2>Admin Verification</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Enter the Admin Password to unlock settings for this channel.</p>
       <label>Admin Password</label>
       <input type="password" id="admin-auth-pass" placeholder="••••••••" />
-      <label>New Channel Name</label>
+      <div style="display:flex; gap: 10px; margin-top: 8px;">
+        <button onclick="verifyAdminPassword()" style="flex:1;">Unlock Settings</button>
+        <button onclick="closeModal('admin-auth-modal')" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="admin-settings-modal" class="overlay hidden">
+    <div class="modal">
+      <h2>Channel Settings</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Update channel details or permanently remove it.</p>
+      <label>Channel Name</label>
       <input type="text" id="edit-room-name" placeholder="Channel Name" />
       <label>New Access Passcode (Optional)</label>
       <input type="password" id="edit-room-pass" placeholder="Leave blank for public" />
       <div style="display:flex; flex-direction:column; gap: 10px; margin-top: 8px;">
         <button onclick="saveRoomEdits()">Save Changes</button>
         <button onclick="deleteRoom()" class="danger">Delete Channel</button>
-        <button onclick="closeModal('admin-room-modal')" class="secondary">Cancel</button>
+        <button onclick="closeModal('admin-settings-modal')" class="secondary">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- Main Application Container -->
   <div class="app-container">
     
-    <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar-header">
         <div class="brand">
-          <div class="logo-icon">H</div>
-          <div>
-            <div class="brand-title">HowApp</div>
+          <div class="brand-title">HowApp</div>
+          <div class="user-badge-container">
             <div id="user-display" class="user-badge">@user</div>
+            <button class="edit-user-btn" onclick="openUsernameEdit()" title="Edit Name">✏️</button>
           </div>
         </div>
-        <button class="add-btn" onclick="openModal('create-room-modal')" title="Create Channel">+</button>
+        <button class="add-btn" onclick="openModal('create-room-modal')" title="Create Channel"><span>+</span></button>
       </div>
 
       <div class="room-list-header">Channels</div>
       <div class="room-list" id="room-list"></div>
     </div>
 
-    <!-- Main Chat Workspace -->
     <div class="chat-area">
       <div class="chat-header">
         <div style="flex: 1;">
@@ -751,15 +762,25 @@
       if (!input) return;
       username = input;
       localStorage.setItem('chat_username', username);
+      document.getElementById('user-display').innerText = `@${username}`;
       document.getElementById('username-modal').classList.add('hidden');
-      initChat();
+      
+      if (!ably) {
+        initChat();
+      }
+    }
+
+    function openUsernameEdit() {
+      document.getElementById('username-modal-title').innerText = "Edit Username";
+      document.getElementById('username-input').value = username;
+      openModal('username-modal');
     }
 
     function initChat() {
       document.getElementById('user-display').innerText = `@${username}`;
       ably = new Ably.Realtime(ABLY_API_KEY);
 
-      // Rewind parameter pulls historical room creation events for fresh loads
+      // Rewind parameter (rewind: '100') ensures all room directory history is fetched on fresh loads
       globalChannel = ably.channels.get('room-directory', { params: { rewind: '100' } });
 
       globalChannel.subscribe((msg) => {
@@ -808,7 +829,7 @@
             <span class="room-name">${escapeHtml(room.name)}</span>
           </div>
           <span class="badge ${isPrivate ? 'private' : 'public'}">${isPrivate ? 'Private' : 'Public'}</span>
-          ${isAdmin ? `<button class="admin-btn" onclick="openAdminModal(event, '${room.id}')" title="Settings">⚙️</button>` : ''}
+          ${isAdmin ? `<button class="admin-btn" onclick="openAdminAuthModal(event, '${room.id}')" title="Settings">⚙️</button>` : ''}
         `;
         listContainer.appendChild(item);
       });
@@ -896,28 +917,33 @@
       selectRoom(newRoom.id);
     }
 
-    function openAdminModal(event, roomId) {
+    function openAdminAuthModal(event, roomId) {
       event.stopPropagation();
       targetAdminRoomId = roomId;
-      const room = rooms.find(r => r.id === roomId);
-      if (!room) return;
-
       document.getElementById('admin-auth-pass').value = '';
-      document.getElementById('edit-room-name').value = room.name;
-      document.getElementById('edit-room-pass').value = room.passcode || '';
-      openModal('admin-room-modal');
+      openModal('admin-auth-modal');
     }
 
-    function saveRoomEdits() {
+    function verifyAdminPassword() {
       const authPass = document.getElementById('admin-auth-pass').value;
-      const newName = document.getElementById('edit-room-name').value.trim();
-      const newPass = document.getElementById('edit-room-pass').value.trim();
       const room = rooms.find(r => r.id === targetAdminRoomId);
 
       if (!room || room.adminPasscode !== authPass) {
         alert('Incorrect Admin Password!');
         return;
       }
+
+      closeModal('admin-auth-modal');
+
+      document.getElementById('edit-room-name').value = room.name;
+      document.getElementById('edit-room-pass').value = room.passcode || '';
+      openModal('admin-settings-modal');
+    }
+
+    function saveRoomEdits() {
+      const newName = document.getElementById('edit-room-name').value.trim();
+      const newPass = document.getElementById('edit-room-pass').value.trim();
+
       if (!newName) {
         alert('Channel name cannot be empty.');
         return;
@@ -929,21 +955,15 @@
         passcode: newPass
       });
 
-      closeModal('admin-room-modal');
+      closeModal('admin-settings-modal');
     }
 
     function deleteRoom() {
-      const authPass = document.getElementById('admin-auth-pass').value;
       const room = rooms.find(r => r.id === targetAdminRoomId);
 
-      if (!room || room.adminPasscode !== authPass) {
-        alert('Incorrect Admin Password!');
-        return;
-      }
-
-      if (confirm(`Delete channel #${room.name}?`)) {
+      if (confirm(`Delete channel #${room ? room.name : ''}?`)) {
         globalChannel.publish('delete-room', { id: targetAdminRoomId });
-        closeModal('admin-room-modal');
+        closeModal('admin-settings-modal');
       }
     }
 
