@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    /* RESET & VARS */
+    /* RESET & CUSTOM PROPERTIES */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -730,6 +730,13 @@
     const unreadRooms = new Set();
     const backgroundUnsubscribers = {};
 
+    // Track rooms user has entered the passcode for (persist locally)
+    const joinedPrivateRooms = new Set(JSON.parse(localStorage.getItem('howapp_unlocked_rooms') || '[]'));
+
+    function saveUnlockedRooms() {
+      localStorage.setItem('howapp_unlocked_rooms', JSON.stringify(Array.from(joinedPrivateRooms)));
+    }
+
     window.handleEnter = (event, callback) => {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -771,6 +778,14 @@
       selectRoom('global-general');
     }
 
+    function isRoomAccessible(roomId) {
+      const room = rooms.find(r => r.id === roomId);
+      if (!room) return true; // DMs or non-existent
+      if (!room.passcode) return true; // Public room
+      if (room.creator && currentUser && room.creator.toLowerCase() === currentUser.username.toLowerCase()) return true; // Creator access
+      return joinedPrivateRooms.has(roomId);
+    }
+
     function attachUnreadListener(roomId) {
       if (backgroundUnsubscribers[roomId]) return;
 
@@ -786,10 +801,13 @@
             if (change.type === "added") {
               const msgData = change.doc.data();
               if (currentUser && msgData.user !== currentUser.username && roomId !== currentRoomId) {
-                unreadRooms.add(roomId);
-                renderRoomList();
-                renderDmList();
-                triggerNotification(roomId, msgData);
+                // Only mark unread & notify if user has access to the channel
+                if (isRoomAccessible(roomId)) {
+                  unreadRooms.add(roomId);
+                  renderRoomList();
+                  renderDmList();
+                  triggerNotification(roomId, msgData);
+                }
               }
             }
           });
@@ -1028,7 +1046,10 @@
       const room = rooms.find(r => r.id === roomId);
       if (!room) return;
 
-      if (room.passcode) {
+      const isCreator = currentUser && room.creator && room.creator.toLowerCase() === currentUser.username.toLowerCase();
+
+      // Check if room needs a passcode and hasn't been unlocked yet
+      if (room.passcode && !isCreator && !joinedPrivateRooms.has(roomId)) {
         pendingRoomId = roomId;
         document.getElementById('room-pass-input').value = '';
         openModal('passcode-modal');
@@ -1042,6 +1063,8 @@
       const room = rooms.find(r => r.id === pendingRoomId);
 
       if (room && room.passcode === input) {
+        joinedPrivateRooms.add(pendingRoomId);
+        saveUnlockedRooms();
         selectRoom(pendingRoomId);
         closeModal('passcode-modal');
       } else {
@@ -1061,6 +1084,11 @@
         passcode: pass,
         creator: currentUser.username
       });
+
+      if (pass) {
+        joinedPrivateRooms.add(newRef.id);
+        saveUnlockedRooms();
+      }
 
       document.getElementById('new-room-name').value = '';
       document.getElementById('new-room-pass').value = '';
@@ -1213,7 +1241,7 @@
 
         notif.onclick = () => {
           window.focus();
-          selectRoom(roomId);
+          attemptJoinRoom(roomId);
         };
       }
     }
