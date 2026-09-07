@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HowApp</title>
+  <title>HowApp — Cloud Realtime Chat</title>
   <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -277,7 +277,7 @@
       box-shadow: 0 10px 28px rgba(244, 63, 94, 0.55);
     }
 
-    /* Abstract Gradient Send Button */
+    /* Abstract Gradient Send Button (No standard linear gradient) */
     .btn-abstract-send {
       background: conic-gradient(from 0deg at 50% 50%, #6366f1, #ec4899, #06b6d4, #8b5cf6, #6366f1) !important;
       background-size: 200% 200% !important;
@@ -446,7 +446,6 @@
       transition: all 0.25s var(--smooth-out);
       border: 1px solid transparent;
       animation: itemSlideIn 0.35s var(--smooth-out) backwards;
-      position: relative;
     }
 
     @keyframes itemSlideIn {
@@ -471,7 +470,6 @@
       align-items: center;
       gap: 10px;
       overflow: hidden;
-      position: relative;
     }
 
     .room-icon {
@@ -490,29 +488,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
       color: var(--text-main);
-    }
-
-    .room-item.has-unread .room-name {
-      font-weight: 800;
-      color: #fff;
-    }
-
-    /* Unread Message Dot Indicator */
-    .unread-indicator-dot {
-      width: 9px;
-      height: 9px;
-      background-color: var(--accent-pink);
-      border-radius: 50%;
-      box-shadow: 0 0 12px var(--accent-pink);
-      flex-shrink: 0;
-      margin-right: 4px;
-      animation: dotPulse 2s infinite ease-in-out;
-    }
-
-    @keyframes dotPulse {
-      0% { transform: scale(1); box-shadow: 0 0 8px var(--accent-pink); }
-      50% { transform: scale(1.25); box-shadow: 0 0 16px var(--accent-pink); }
-      100% { transform: scale(1); box-shadow: 0 0 8px var(--accent-pink); }
     }
 
     .badge {
@@ -604,6 +579,7 @@
       border-radius: 10px;
     }
 
+    /* Refined Compact & Rounded Solid Chat Bubbles (No Gradients) */
     .message {
       max-width: 65%;
       display: flex;
@@ -683,6 +659,7 @@
       transform: scale(1.01);
     }
 
+    /* Clean Solid Primary Accent for Sent Messages (No Bubble Gradient) */
     .message.own .message-bubble {
       background: var(--accent-primary);
       color: #ffffff;
@@ -714,6 +691,7 @@
       padding: 14px 26px;
     }
 
+    /* Profile Avatar Settings Preview */
     .avatar-preview-box {
       width: 80px;
       height: 80px;
@@ -771,12 +749,14 @@
 </head>
 <body>
 
+  <!-- Abstract Animated Gradient Background -->
   <div class="abstract-bg">
     <div class="mesh-blob blob-1"></div>
     <div class="mesh-blob blob-2"></div>
     <div class="mesh-blob blob-3"></div>
   </div>
 
+  <!-- Screen 1: Auth Modal (Login / Signup) -->
   <div id="auth-modal" class="overlay">
     <div class="modal">
       <h2>Welcome to HowApp</h2>
@@ -785,6 +765,7 @@
         <button id="tab-signup-btn" class="tab-btn" onclick="switchAuthTab('signup')">Create Account</button>
       </div>
 
+      <!-- Login View -->
       <div id="login-view" style="display: flex; flex-direction: column; gap: 12px;">
         <label>Username</label>
         <input type="text" id="login-username" placeholder="Enter your username" onkeydown="handleEnter(event, processLogin)" />
@@ -793,6 +774,7 @@
         <button onclick="processLogin()" style="margin-top: 6px;">Sign In →</button>
       </div>
 
+      <!-- Signup View -->
       <div id="signup-view" class="hidden" style="display: flex; flex-direction: column; gap: 12px;">
         <label>New Username</label>
         <input type="text" id="signup-username" placeholder="Choose a username" onkeydown="handleEnter(event, processSignup)" />
@@ -803,6 +785,7 @@
     </div>
   </div>
 
+  <!-- Screen 2: Account Settings Modal -->
   <div id="account-settings-modal" class="overlay hidden">
     <div class="modal">
       <h2>Account Settings</h2>
@@ -828,6 +811,7 @@
     </div>
   </div>
 
+  <!-- Screen 3: New Direct Message Modal -->
   <div id="create-dm-modal" class="overlay hidden">
     <div class="modal">
       <h2>Start Direct Message</h2>
@@ -841,6 +825,7 @@
     </div>
   </div>
 
+  <!-- Screen 4: Room Passcode Modal -->
   <div id="passcode-modal" class="overlay hidden">
     <div class="modal">
       <h2>Protected Channel</h2>
@@ -854,6 +839,7 @@
     </div>
   </div>
 
+  <!-- Screen 5: Create Room Modal (Removed Admin Password) -->
   <div id="create-room-modal" class="overlay hidden">
     <div class="modal">
       <h2>Create Channel</h2>
@@ -868,6 +854,7 @@
     </div>
   </div>
 
+  <!-- Screen 6: Creator Channel Settings Screen -->
   <div id="creator-settings-modal" class="overlay hidden">
     <div class="modal">
       <h2>Channel Settings</h2>
@@ -884,12 +871,14 @@
     </div>
   </div>
 
+  <!-- Main Application Workspace -->
   <div class="app-container">
     
     <div class="sidebar">
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-title">HowApp</div>
+          <!-- Clickable Account Badge -->
           <div class="user-profile-badge" onclick="openAccountSettings()" title="Account Settings">
             <div id="user-badge-avatar" class="profile-avatar-mini">?</div>
             <span id="user-badge-name" class="user-badge-name">@user</span>
@@ -939,30 +928,28 @@
 
     let ably, globalAccountsChannel, roomDirChannel, dmDirChannel, currentChannel;
     
-    // Global Memory Databases
-    let accountsDb = {}; 
+    // Global Synced Memory Databases
+    let accountsDb = {}; // { username: { password, avatar } }
     let rooms = [
       { id: 'global-general', name: 'General', passcode: '', creator: 'system', isDefault: true }
     ];
-    let dms = []; 
+    let dms = []; // [ { id, user1, user2 } ]
 
-    // Unread Tracker State Map: { [roomId]: boolean }
-    let unreadMap = {};
-    let roomSubscriptionsMap = {};
-
-    let currentUser = null; 
+    let currentUser = null; // Session User Object: { username, avatar }
     let currentRoomId = null;
     let pendingRoomId = null;
     let targetCreatorRoomId = null;
     let tempAvatarBase64 = null;
 
     window.onload = function() {
+      // Connect to Ably Cloud first to sync Accounts and Directory State globally across all devices
       ably = new Ably.Realtime(ABLY_API_KEY);
       
       syncGlobalAccounts(() => {
         syncRoomDirectory();
         syncDmDirectory();
 
+        // Check for saved session in local storage
         const savedSession = localStorage.getItem('howapp_session_user');
         if (savedSession && accountsDb[savedSession.toLowerCase()]) {
           currentUser = {
@@ -982,7 +969,7 @@
       }
     }
 
-    /* Global Account Sync */
+    /* Global Cloud Account Sync Architecture */
     function syncGlobalAccounts(onComplete) {
       globalAccountsChannel = ably.channels.get('app-global-accounts', { params: { rewind: '100' } });
 
@@ -1011,6 +998,7 @@
           password: data.password,
           avatar: data.avatar || ''
         };
+        // If current logged-in user got updated from another device
         if (currentUser && currentUser.username.toLowerCase() === key) {
           currentUser.avatar = data.avatar || '';
           updateUserUI();
@@ -1084,7 +1072,7 @@
       window.location.reload();
     }
 
-    /* Account Settings */
+    /* Account Settings & Password Modification */
     function openAccountSettings() {
       document.getElementById('settings-username').value = currentUser.username;
       document.getElementById('settings-new-password').value = '';
@@ -1146,6 +1134,7 @@
         avatar: updatedAvatar
       };
 
+      // Publish profile & password update globally to Ably
       globalAccountsChannel.publish('account-evt', payload);
 
       currentUser.avatar = updatedAvatar;
@@ -1164,6 +1153,7 @@
       }
     }
 
+    /* Workspace & Sync Initialization */
     function initChatWorkspace() {
       updateUserUI();
       renderRoomList();
@@ -1192,7 +1182,6 @@
       if (msg.name === 'new-room') {
         if (!rooms.some(r => r.id === msg.data.id)) {
           rooms.push(msg.data);
-          listenToUnreadMessages(msg.data.id);
         }
       } else if (msg.name === 'update-room') {
         const room = rooms.find(r => r.id === msg.data.id);
@@ -1220,7 +1209,6 @@
           page.items.reverse().forEach(msg => {
             if (msg.name === 'new-dm' && !dms.some(d => d.id === msg.data.id)) {
               dms.push(msg.data);
-              listenToUnreadMessages(msg.data.id);
             }
           });
         }
@@ -1230,49 +1218,28 @@
       dmDirChannel.subscribe('new-dm', msg => {
         if (!dms.some(d => d.id === msg.data.id)) {
           dms.push(msg.data);
-          listenToUnreadMessages(msg.data.id);
           renderDmList();
         }
       });
     }
 
-    /* Background Listener for Unread Dot Indicators */
-    function listenToUnreadMessages(roomId) {
-      if (roomSubscriptionsMap[roomId]) return;
-
-      const chan = ably.channels.get(`chat-msg-${roomId}`);
-      chan.subscribe('msg', (msg) => {
-        // If message is in another room and not sent by current user, mark room as unread
-        if (roomId !== currentRoomId && currentUser && msg.data.user !== currentUser.username) {
-          unreadMap[roomId] = true;
-          renderRoomList();
-          renderDmList();
-        }
-      });
-
-      roomSubscriptionsMap[roomId] = chan;
-    }
-
-    /* Navigation Sidebar Rendering with Unread Dot Support */
+    /* Rendering Navigation Sidebar */
     function renderRoomList() {
       const listContainer = document.getElementById('room-list');
       if (!listContainer) return;
       listContainer.innerHTML = '';
 
       rooms.forEach((room, idx) => {
-        listenToUnreadMessages(room.id);
-
-        const isUnread = !!unreadMap[room.id];
         const item = document.createElement('div');
-        item.className = `room-item ${room.id === currentRoomId ? 'active' : ''} ${isUnread ? 'has-unread' : ''}`;
+        item.className = `room-item ${room.id === currentRoomId ? 'active' : ''}`;
         item.style.animationDelay = `${idx * 0.03}s`;
         
         const isPrivate = room.passcode && room.passcode.length > 0;
+        // Check if current user is creator of the channel
         const isCreator = currentUser && room.creator && room.creator.toLowerCase() === currentUser.username.toLowerCase();
 
         item.innerHTML = `
           <div class="room-info" onclick="attemptJoinRoom('${room.id}')" style="flex:1;">
-            ${isUnread ? '<div class="unread-indicator-dot" title="Unread messages"></div>' : ''}
             <span class="room-icon">#</span>
             <span class="room-name">${escapeHtml(room.name)}</span>
           </div>
@@ -1298,14 +1265,11 @@
       );
 
       myDms.forEach((dm, idx) => {
-        listenToUnreadMessages(dm.id);
-
         const otherUser = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
         const otherAcc = accountsDb[otherUser.toLowerCase()];
-        const isUnread = !!unreadMap[dm.id];
 
         const item = document.createElement('div');
-        item.className = `room-item ${dm.id === currentRoomId ? 'active' : ''} ${isUnread ? 'has-unread' : ''}`;
+        item.className = `room-item ${dm.id === currentRoomId ? 'active' : ''}`;
         item.style.animationDelay = `${idx * 0.03}s`;
         item.onclick = () => selectRoom(dm.id, `@${otherUser}`);
 
@@ -1315,7 +1279,6 @@
 
         item.innerHTML = `
           <div class="room-info" style="flex:1;">
-            ${isUnread ? '<div class="unread-indicator-dot" title="Unread messages"></div>' : ''}
             <span class="room-icon">${avatarMarkup}</span>
             <span class="room-name">${escapeHtml(otherUser)}</span>
           </div>
@@ -1325,7 +1288,7 @@
       });
     }
 
-    /* DM Feature */
+    /* DM Feature Implementation */
     function createDM() {
       const targetUser = document.getElementById('dm-target-username').value.trim();
 
@@ -1344,6 +1307,7 @@
         return;
       }
 
+      // Generate deterministic DM ID
       const sortedUsers = [currentUser.username.toLowerCase(), targetUser.toLowerCase()].sort();
       const dmId = `dm-${sortedUsers[0]}--${sortedUsers[1]}`;
 
@@ -1388,8 +1352,9 @@
     }
 
     function selectRoom(roomId, customTitle = null) {
-      // Clear unread status for the room being opened
-      delete unreadMap[roomId];
+      if (currentChannel) {
+        currentChannel.unsubscribe();
+      }
 
       currentRoomId = roomId;
       const room = rooms.find(r => r.id === roomId);
@@ -1398,6 +1363,7 @@
       document.getElementById('current-room-title').innerText = titleText;
       document.getElementById('messages-container').innerHTML = '';
 
+      // Initialize Ably Channel with Rewind to retrieve persistent history across devices
       currentChannel = ably.channels.get(`chat-msg-${roomId}`, { params: { rewind: '100' } });
       
       currentChannel.history({ limit: 100 }, (err, resultPage) => {
@@ -1405,6 +1371,10 @@
           const historyMsgs = resultPage.items.reverse();
           historyMsgs.forEach(msg => appendMessage(msg.data));
         }
+      });
+
+      currentChannel.subscribe('msg', (msg) => {
+        appendMessage(msg.data);
       });
 
       renderRoomList();
