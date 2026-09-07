@@ -934,635 +934,648 @@
   </div>
 
   <script>
-    const ABLY_API_KEY = 'LDAdyw.d365Vw:DgFTHDyC7dDCOglWbLR7ETmDhw5eJudFqcpM0V1XGyg';
+  const ABLY_API_KEY = 'LDAdyw.d365Vw:DgFTHDyC7dDCOglWbLR7ETmDhw5eJudFqcpM0V1XGyg';
 
-    let ably, globalAccountsChannel, roomDirChannel, dmDirChannel, currentChannel;
-    const roomChannelsMap = {}; // Tracks active background listeners for unread states
-    const unreadRooms = new Set(); // Tracks room IDs with unread messages
+  let ably, globalAccountsChannel, roomDirChannel, dmDirChannel;
+  let currentActiveChannel = null; // Track active channel subscription
+  let activeMsgSubscriber = null; // Track current live message callback
+  const roomChannelsMap = {}; // Tracks active background listeners for unread states
+  const unreadRooms = new Set(); // Tracks room IDs with unread messages
 
-    let accountsDb = {};
-    let rooms = [
-      { id: 'global-general', name: 'General', passcode: '', creator: 'system', isDefault: true }
-    ];
-    let dms = [];
+  let accountsDb = {};
+  let rooms = [
+    { id: 'global-general', name: 'General', passcode: '', creator: 'system', isDefault: true }
+  ];
+  let dms = [];
 
-    let currentUser = null;
-    let currentRoomId = null;
-    let pendingRoomId = null;
-    let targetCreatorRoomId = null;
-    let tempAvatarBase64 = null;
+  let currentUser = null;
+  let currentRoomId = null;
+  let pendingRoomId = null;
+  let targetCreatorRoomId = null;
+  let tempAvatarBase64 = null;
 
-    window.onload = function() {
-      // Request device notification permissions
-      if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
-      }
-
-      ably = new Ably.Realtime(ABLY_API_KEY);
-      
-      syncGlobalAccounts(() => {
-        syncRoomDirectory();
-        syncDmDirectory();
-
-        const savedSession = localStorage.getItem('howapp_session_user');
-        if (savedSession && accountsDb[savedSession.toLowerCase()]) {
-          currentUser = {
-            username: savedSession,
-            avatar: accountsDb[savedSession.toLowerCase()].avatar || ''
-          };
-          document.getElementById('auth-modal').classList.add('hidden');
-          initChatWorkspace();
-        }
-      });
-    };
-
-    function handleEnter(event, callback) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        callback();
-      }
+  window.onload = function() {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
     }
 
-    /* Global Cloud Account Sync */
-    function syncGlobalAccounts(onComplete) {
-      globalAccountsChannel = ably.channels.get('app-global-accounts', { params: { rewind: '100' } });
+    ably = new Ably.Realtime(ABLY_API_KEY);
+    
+    syncGlobalAccounts(() => {
+      syncRoomDirectory();
+      syncDmDirectory();
 
-      globalAccountsChannel.history({ limit: 100 }, (err, resultPage) => {
-        if (!err && resultPage.items) {
-          resultPage.items.reverse().forEach(msg => {
-            applyAccountEvent(msg.data);
-          });
-        }
+      const savedSession = localStorage.getItem('howapp_session_user');
+      if (savedSession && accountsDb[savedSession.toLowerCase()]) {
+        currentUser = {
+          username: savedSession,
+          avatar: accountsDb[savedSession.toLowerCase()].avatar || ''
+        };
+        document.getElementById('auth-modal').classList.add('hidden');
+        initChatWorkspace();
+      }
+    });
+  };
 
-        globalAccountsChannel.subscribe(msg => {
+  function handleEnter(event, callback) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      callback();
+    }
+  }
+
+  /* Global Cloud Account Sync */
+  function syncGlobalAccounts(onComplete) {
+    globalAccountsChannel = ably.channels.get('app-global-accounts', { params: { rewind: '100' } });
+
+    globalAccountsChannel.history({ limit: 100 }, (err, resultPage) => {
+      if (!err && resultPage.items) {
+        resultPage.items.reverse().forEach(msg => {
           applyAccountEvent(msg.data);
         });
+      }
 
-        if (onComplete) onComplete();
+      globalAccountsChannel.subscribe(msg => {
+        applyAccountEvent(msg.data);
       });
-    }
 
-    function applyAccountEvent(data) {
-      if (!data || !data.username) return;
-      const key = data.username.toLowerCase();
+      if (onComplete) onComplete();
+    });
+  }
 
-      if (data.action === 'register' || data.action === 'update') {
-        accountsDb[key] = {
-          username: data.username,
-          password: data.password,
-          avatar: data.avatar || ''
-        };
-        if (currentUser && currentUser.username.toLowerCase() === key) {
-          currentUser.avatar = data.avatar || '';
-          updateUserUI();
-        }
+  function applyAccountEvent(data) {
+    if (!data || !data.username) return;
+    const key = data.username.toLowerCase();
+
+    if (data.action === 'register' || data.action === 'update') {
+      accountsDb[key] = {
+        username: data.username,
+        password: data.password,
+        avatar: data.avatar || ''
+      };
+      if (currentUser && currentUser.username.toLowerCase() === key) {
+        currentUser.avatar = data.avatar || '';
+        updateUserUI();
       }
     }
+  }
 
-    /* Auth Tab switching */
-    function switchAuthTab(tab) {
-      const loginView = document.getElementById('login-view');
-      const signupView = document.getElementById('signup-view');
-      const tabLoginBtn = document.getElementById('tab-login-btn');
-      const tabSignupBtn = document.getElementById('tab-signup-btn');
+  /* Auth Tab switching */
+  function switchAuthTab(tab) {
+    const loginView = document.getElementById('login-view');
+    const signupView = document.getElementById('signup-view');
+    const tabLoginBtn = document.getElementById('tab-login-btn');
+    const tabSignupBtn = document.getElementById('tab-signup-btn');
 
-      if (tab === 'login') {
-        loginView.classList.remove('hidden');
-        signupView.classList.add('hidden');
-        tabLoginBtn.classList.add('active');
-        tabSignupBtn.classList.remove('active');
-      } else {
-        signupView.classList.remove('hidden');
-        loginView.classList.add('hidden');
-        tabSignupBtn.classList.add('active');
-        tabLoginBtn.classList.remove('active');
-      }
+    if (tab === 'login') {
+      loginView.classList.remove('hidden');
+      signupView.classList.add('hidden');
+      tabLoginBtn.classList.add('active');
+      tabSignupBtn.classList.remove('active');
+    } else {
+      signupView.classList.remove('hidden');
+      loginView.classList.add('hidden');
+      tabSignupBtn.classList.add('active');
+      tabLoginBtn.classList.remove('active');
+    }
+  }
+
+  function processSignup() {
+    const u = document.getElementById('signup-username').value.trim();
+    const p = document.getElementById('signup-password').value.trim();
+
+    if (!u || !p) {
+      alert('Please fill in all fields.');
+      return;
     }
 
-    function processSignup() {
-      const u = document.getElementById('signup-username').value.trim();
-      const p = document.getElementById('signup-password').value.trim();
-
-      if (!u || !p) {
-        alert('Please fill in all fields.');
-        return;
-      }
-
-      if (accountsDb[u.toLowerCase()]) {
-        alert('Username is already registered globally!');
-        return;
-      }
-
-      const payload = { action: 'register', username: u, password: p, avatar: '' };
-      globalAccountsChannel.publish('account-evt', payload);
-
-      loginUser({ username: u, avatar: '' });
+    if (accountsDb[u.toLowerCase()]) {
+      alert('Username is already registered globally!');
+      return;
     }
 
-    function processLogin() {
-      const u = document.getElementById('login-username').value.trim();
-      const p = document.getElementById('login-password').value.trim();
+    const payload = { action: 'register', username: u, password: p, avatar: '' };
+    globalAccountsChannel.publish('account-evt', payload);
 
-      const acc = accountsDb[u.toLowerCase()];
+    loginUser({ username: u, avatar: '' });
+  }
 
-      if (!acc || acc.password !== p) {
-        alert('Invalid username or password.');
-        return;
-      }
+  function processLogin() {
+    const u = document.getElementById('login-username').value.trim();
+    const p = document.getElementById('login-password').value.trim();
 
-      loginUser({ username: acc.username, avatar: acc.avatar || '' });
+    const acc = accountsDb[u.toLowerCase()];
+
+    if (!acc || acc.password !== p) {
+      alert('Invalid username or password.');
+      return;
     }
 
-    function loginUser(userObj) {
-      currentUser = { username: userObj.username, avatar: userObj.avatar || '' };
-      localStorage.setItem('howapp_session_user', currentUser.username);
-      document.getElementById('auth-modal').classList.add('hidden');
-      initChatWorkspace();
+    loginUser({ username: acc.username, avatar: acc.avatar || '' });
+  }
+
+  function loginUser(userObj) {
+    currentUser = { username: userObj.username, avatar: userObj.avatar || '' };
+    localStorage.setItem('howapp_session_user', currentUser.username);
+    document.getElementById('auth-modal').classList.add('hidden');
+    initChatWorkspace();
+  }
+
+  function processLogout() {
+    localStorage.removeItem('howapp_session_user');
+    window.location.reload();
+  }
+
+  /* Account Settings */
+  function openAccountSettings() {
+    document.getElementById('settings-username').value = currentUser.username;
+    document.getElementById('settings-new-password').value = '';
+    
+    const acc = accountsDb[currentUser.username.toLowerCase()];
+    tempAvatarBase64 = acc ? acc.avatar : (currentUser.avatar || null);
+    
+    const previewImg = document.getElementById('avatar-preview-img');
+    const placeholder = document.getElementById('avatar-preview-placeholder');
+
+    if (tempAvatarBase64) {
+      previewImg.src = tempAvatarBase64;
+      previewImg.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+    } else {
+      previewImg.classList.add('hidden');
+      placeholder.classList.remove('hidden');
     }
 
-    function processLogout() {
-      localStorage.removeItem('howapp_session_user');
-      window.location.reload();
-    }
+    openModal('account-settings-modal');
+  }
 
-    /* Account Settings */
-    function openAccountSettings() {
-      document.getElementById('settings-username').value = currentUser.username;
-      document.getElementById('settings-new-password').value = '';
-      
-      const acc = accountsDb[currentUser.username.toLowerCase()];
-      tempAvatarBase64 = acc ? acc.avatar : (currentUser.avatar || null);
-      
-      const previewImg = document.getElementById('avatar-preview-img');
-      const placeholder = document.getElementById('avatar-preview-placeholder');
+  function handleAvatarSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-      if (tempAvatarBase64) {
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 80;
+        canvas.height = 80;
+        ctx.drawImage(img, 0, 0, 80, 80);
+        tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+        const previewImg = document.getElementById('avatar-preview-img');
         previewImg.src = tempAvatarBase64;
         previewImg.classList.remove('hidden');
-        placeholder.classList.add('hidden');
-      } else {
-        previewImg.classList.add('hidden');
-        placeholder.classList.remove('hidden');
-      }
-
-      openModal('account-settings-modal');
-    }
-
-    function handleAvatarSelect(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = 80;
-          canvas.height = 80;
-          ctx.drawImage(img, 0, 0, 80, 80);
-          tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
-
-          const previewImg = document.getElementById('avatar-preview-img');
-          previewImg.src = tempAvatarBase64;
-          previewImg.classList.remove('hidden');
-          document.getElementById('avatar-preview-placeholder').classList.add('hidden');
-        };
-        img.src = evt.target.result;
+        document.getElementById('avatar-preview-placeholder').classList.add('hidden');
       };
-      reader.readAsDataURL(file);
+      img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function saveAccountSettings() {
+    const acc = accountsDb[currentUser.username.toLowerCase()];
+    const newPasswordInput = document.getElementById('settings-new-password').value.trim();
+    
+    const updatedPassword = newPasswordInput.length > 0 ? newPasswordInput : (acc ? acc.password : '');
+    const updatedAvatar = tempAvatarBase64 || '';
+
+    const payload = {
+      action: 'update',
+      username: currentUser.username,
+      password: updatedPassword,
+      avatar: updatedAvatar
+    };
+
+    globalAccountsChannel.publish('account-evt', payload);
+
+    currentUser.avatar = updatedAvatar;
+    updateUserUI();
+    closeModal('account-settings-modal');
+  }
+
+  function updateUserUI() {
+    document.getElementById('user-badge-name').innerText = `@${currentUser.username}`;
+    const badgeAvatar = document.getElementById('user-badge-avatar');
+
+    if (currentUser.avatar) {
+      badgeAvatar.innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+    } else {
+      badgeAvatar.innerText = currentUser.username.charAt(0).toUpperCase();
     }
+  }
 
-    function saveAccountSettings() {
-      const acc = accountsDb[currentUser.username.toLowerCase()];
-      const newPasswordInput = document.getElementById('settings-new-password').value.trim();
-      
-      const updatedPassword = newPasswordInput.length > 0 ? newPasswordInput : (acc ? acc.password : '');
-      const updatedAvatar = tempAvatarBase64 || '';
+  /* Workspace & Sync Initialization */
+  function initChatWorkspace() {
+    updateUserUI();
+    renderRoomList();
+    renderDmList();
+    selectRoom('global-general');
+  }
 
-      const payload = {
-        action: 'update',
-        username: currentUser.username,
-        password: updatedPassword,
-        avatar: updatedAvatar
-      };
+  /* Background Message Monitoring for Unreads & Notifications */
+  function attachUnreadListener(roomId) {
+    if (roomChannelsMap[roomId]) return;
 
-      globalAccountsChannel.publish('account-evt', payload);
+    const ch = ably.channels.get(`chat-msg-${roomId}`);
+    roomChannelsMap[roomId] = ch;
 
-      currentUser.avatar = updatedAvatar;
-      updateUserUI();
-      closeModal('account-settings-modal');
-    }
-
-    function updateUserUI() {
-      document.getElementById('user-badge-name').innerText = `@${currentUser.username}`;
-      const badgeAvatar = document.getElementById('user-badge-avatar');
-
-      if (currentUser.avatar) {
-        badgeAvatar.innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
-      } else {
-        badgeAvatar.innerText = currentUser.username.charAt(0).toUpperCase();
-      }
-    }
-
-    /* Workspace & Sync Initialization */
-    function initChatWorkspace() {
-      updateUserUI();
-      renderRoomList();
-      renderDmList();
-      selectRoom('global-general');
-    }
-
-    /* Background Message Monitoring for Unreads & Notifications */
-    function attachUnreadListener(roomId) {
-      if (roomChannelsMap[roomId]) return;
-
-      const ch = ably.channels.get(`chat-msg-${roomId}`);
-      roomChannelsMap[roomId] = ch;
-
-      ch.subscribe('msg', (msg) => {
-        // Only trigger if message comes from someone else AND room is not currently active
-        if (currentUser && msg.data.user !== currentUser.username && roomId !== currentRoomId) {
-          unreadRooms.add(roomId);
-          renderRoomList();
-          renderDmList();
-          triggerDeviceNotification(roomId, msg.data);
-        }
-      });
-    }
-
-    function triggerDeviceNotification(roomId, msgData) {
-      if ("Notification" in window && Notification.permission === "granted") {
-        let title = "HowApp Message";
-        const room = rooms.find(r => r.id === roomId);
-
-        if (room) {
-          title = `#${room.name}`;
-        } else if (roomId.startsWith('dm-')) {
-          title = `DM from @${msgData.user}`;
-        }
-
-        const notif = new Notification(title, {
-          body: `${msgData.user}: ${msgData.text}`,
-          icon: msgData.avatar || undefined
-        });
-
-        notif.onclick = function() {
-          window.focus();
-          selectRoom(roomId);
-        };
-      }
-    }
-
-    /* Room Directory Cloud Sync */
-    function syncRoomDirectory() {
-      roomDirChannel = ably.channels.get('app-room-directory', { params: { rewind: '100' } });
-
-      roomDirChannel.history({ limit: 100 }, (err, page) => {
-        if (!err && page.items) {
-          page.items.reverse().forEach(msg => handleRoomEvent(msg));
-        }
+    ch.subscribe('msg', (msg) => {
+      // Only trigger notification/unread if message comes from someone else AND room is not active
+      if (currentUser && msg.data.user !== currentUser.username && roomId !== currentRoomId) {
+        unreadRooms.add(roomId);
         renderRoomList();
-      });
-
-      roomDirChannel.subscribe(msg => {
-        handleRoomEvent(msg);
-        renderRoomList();
-      });
-    }
-
-    function handleRoomEvent(msg) {
-      if (msg.name === 'new-room') {
-        if (!rooms.some(r => r.id === msg.data.id)) {
-          rooms.push(msg.data);
-          attachUnreadListener(msg.data.id);
-        }
-      } else if (msg.name === 'update-room') {
-        const room = rooms.find(r => r.id === msg.data.id);
-        if (room) {
-          room.name = msg.data.name;
-          room.passcode = msg.data.passcode;
-          if (currentRoomId === room.id) {
-            document.getElementById('current-room-title').innerText = `# ${room.name}`;
-          }
-        }
-      } else if (msg.name === 'delete-room') {
-        rooms = rooms.filter(r => r.id !== msg.data.id);
-        if (unreadRooms.has(msg.data.id)) unreadRooms.delete(msg.data.id);
-        if (currentRoomId === msg.data.id) {
-          selectRoom('global-general');
-        }
-      }
-    }
-
-    /* DM Directory Cloud Sync */
-    function syncDmDirectory() {
-      dmDirChannel = ably.channels.get('app-dm-directory', { params: { rewind: '100' } });
-
-      dmDirChannel.history({ limit: 100 }, (err, page) => {
-        if (!err && page.items) {
-          page.items.reverse().forEach(msg => {
-            if (msg.name === 'new-dm' && !dms.some(d => d.id === msg.data.id)) {
-              dms.push(msg.data);
-              attachUnreadListener(msg.data.id);
-            }
-          });
-        }
         renderDmList();
-      });
-
-      dmDirChannel.subscribe('new-dm', msg => {
-        if (!dms.some(d => d.id === msg.data.id)) {
-          dms.push(msg.data);
-          attachUnreadListener(msg.data.id);
-          renderDmList();
-        }
-      });
-    }
-
-    /* Rendering Navigation Sidebar */
-    function renderRoomList() {
-      const listContainer = document.getElementById('room-list');
-      if (!listContainer) return;
-      listContainer.innerHTML = '';
-
-      rooms.forEach((room, idx) => {
-        attachUnreadListener(room.id);
-        const item = document.createElement('div');
-        item.className = `room-item ${room.id === currentRoomId ? 'active' : ''}`;
-        item.style.animationDelay = `${idx * 0.03}s`;
-        
-        const isPrivate = room.passcode && room.passcode.length > 0;
-        const isCreator = currentUser && room.creator && room.creator.toLowerCase() === currentUser.username.toLowerCase();
-        const hasUnread = unreadRooms.has(room.id);
-
-        item.innerHTML = `
-          <div class="room-info" onclick="attemptJoinRoom('${room.id}')" style="flex:1;">
-            <span class="room-icon">#</span>
-            <span class="room-name">${escapeHtml(room.name)}</span>
-          </div>
-          ${hasUnread 
-            ? `<span class="badge unread">Unread</span>`
-            : `<span class="badge ${isPrivate ? 'private' : 'public'}">${isPrivate ? 'Private' : 'Public'}</span>`
-          }
-          ${isCreator && !room.isDefault ? `
-            <button class="icon-btn" onclick="openCreatorSettingsModal(event, '${room.id}')" title="Channel Settings" style="margin-left:6px;">
-              <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-            </button>
-          ` : ''}
-        `;
-        listContainer.appendChild(item);
-      });
-    }
-
-    function renderDmList() {
-      const dmContainer = document.getElementById('dm-list');
-      if (!dmContainer || !currentUser) return;
-      dmContainer.innerHTML = '';
-
-      const myDms = dms.filter(d => 
-        d.user1.toLowerCase() === currentUser.username.toLowerCase() || 
-        d.user2.toLowerCase() === currentUser.username.toLowerCase()
-      );
-
-      myDms.forEach((dm, idx) => {
-        attachUnreadListener(dm.id);
-        const otherUser = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
-        const otherAcc = accountsDb[otherUser.toLowerCase()];
-        const hasUnread = unreadRooms.has(dm.id);
-
-        const item = document.createElement('div');
-        item.className = `room-item ${dm.id === currentRoomId ? 'active' : ''}`;
-        item.style.animationDelay = `${idx * 0.03}s`;
-        item.onclick = () => selectRoom(dm.id, `@${otherUser}`);
-
-        const avatarMarkup = (otherAcc && otherAcc.avatar) 
-          ? `<img src="${otherAcc.avatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" />`
-          : `@`;
-
-        item.innerHTML = `
-          <div class="room-info" style="flex:1;">
-            <span class="room-icon">${avatarMarkup}</span>
-            <span class="room-name">${escapeHtml(otherUser)}</span>
-          </div>
-          ${hasUnread 
-            ? `<span class="badge unread">Unread</span>`
-            : `<span class="badge dm">Direct</span>`
-          }
-        `;
-        dmContainer.appendChild(item);
-      });
-    }
-
-    /* DM Feature */
-    function createDM() {
-      const targetUser = document.getElementById('dm-target-username').value.trim();
-
-      if (!targetUser) {
-        alert('Please enter a username.');
-        return;
+        triggerDeviceNotification(roomId, msg.data);
       }
+    });
+  }
 
-      if (targetUser.toLowerCase() === currentUser.username.toLowerCase()) {
-        alert('You cannot start a direct message with yourself.');
-        return;
-      }
-
-      if (!accountsDb[targetUser.toLowerCase()]) {
-        alert(`User "@${targetUser}" was not found on HowApp.`);
-        return;
-      }
-
-      const sortedUsers = [currentUser.username.toLowerCase(), targetUser.toLowerCase()].sort();
-      const dmId = `dm-${sortedUsers[0]}--${sortedUsers[1]}`;
-
-      const dmPayload = {
-        id: dmId,
-        user1: currentUser.username,
-        user2: targetUser
-      };
-
-      dmDirChannel.publish('new-dm', dmPayload);
-
-      document.getElementById('dm-target-username').value = '';
-      closeModal('create-dm-modal');
-
-      selectRoom(dmId, `@${targetUser}`);
-    }
-
-    /* Channel Room Operations */
-    function attemptJoinRoom(roomId) {
+  function triggerDeviceNotification(roomId, msgData) {
+    if ("Notification" in window && Notification.permission === "granted") {
+      let title = "HowApp Message";
       const room = rooms.find(r => r.id === roomId);
-      if (!room) return;
 
-      if (room.passcode) {
-        pendingRoomId = roomId;
-        document.getElementById('room-pass-input').value = '';
-        openModal('passcode-modal');
-      } else {
+      if (room) {
+        title = `#${room.name}`;
+      } else if (roomId.startsWith('dm-')) {
+        title = `DM from @${msgData.user}`;
+      }
+
+      const notif = new Notification(title, {
+        body: `${msgData.user}: ${msgData.text}`,
+        icon: msgData.avatar || undefined
+      });
+
+      notif.onclick = function() {
+        window.focus();
         selectRoom(roomId);
-      }
-    }
-
-    function verifyPasscode() {
-      const input = document.getElementById('room-pass-input').value;
-      const room = rooms.find(r => r.id === pendingRoomId);
-
-      if (room && room.passcode === input) {
-        selectRoom(pendingRoomId);
-        closeModal('passcode-modal');
-      } else {
-        alert('Incorrect passcode!');
-      }
-    }
-
-    function selectRoom(roomId, customTitle = null) {
-      // Clear unread status when opening the channel
-      if (unreadRooms.has(roomId)) {
-        unreadRooms.delete(roomId);
-      }
-
-      currentRoomId = roomId;
-      const room = rooms.find(r => r.id === roomId);
-      
-      const titleText = customTitle ? customTitle : `# ${room ? room.name : 'Channel'}`;
-      document.getElementById('current-room-title').innerText = titleText;
-      document.getElementById('messages-container').innerHTML = '';
-
-      currentChannel = roomChannelsMap[roomId] || ably.channels.get(`chat-msg-${roomId}`, { params: { rewind: '100' } });
-      
-      currentChannel.history({ limit: 100 }, (err, resultPage) => {
-        if (!err && resultPage.items) {
-          document.getElementById('messages-container').innerHTML = '';
-          const historyMsgs = resultPage.items.reverse();
-          historyMsgs.forEach(msg => appendMessage(msg.data));
-        }
-      });
-
-      renderRoomList();
-      renderDmList();
-    }
-
-    function createRoom() {
-      const name = document.getElementById('new-room-name').value.trim();
-      const pass = document.getElementById('new-room-pass').value.trim();
-
-      if (!name) {
-        alert('Please enter a channel name.');
-        return;
-      }
-
-      const newRoom = {
-        id: 'room-' + Date.now(),
-        name: name,
-        passcode: pass,
-        creator: currentUser.username
       };
+    }
+  }
 
-      roomDirChannel.publish('new-room', newRoom);
+  /* Room Directory Cloud Sync */
+  function syncRoomDirectory() {
+    roomDirChannel = ably.channels.get('app-room-directory', { params: { rewind: '100' } });
 
-      document.getElementById('new-room-name').value = '';
-      document.getElementById('new-room-pass').value = '';
-      closeModal('create-room-modal');
+    roomDirChannel.history({ limit: 100 }, (err, page) => {
+      if (!err && page.items) {
+        page.items.reverse().forEach(msg => handleRoomEvent(msg));
+      }
+      renderRoomList();
+    });
 
-      selectRoom(newRoom.id);
+    roomDirChannel.subscribe(msg => {
+      handleRoomEvent(msg);
+      renderRoomList();
+    });
+  }
+
+  function handleRoomEvent(msg) {
+    if (msg.name === 'new-room') {
+      if (!rooms.some(r => r.id === msg.data.id)) {
+        rooms.push(msg.data);
+        attachUnreadListener(msg.data.id);
+      }
+    } else if (msg.name === 'update-room') {
+      const room = rooms.find(r => r.id === msg.data.id);
+      if (room) {
+        room.name = msg.data.name;
+        room.passcode = msg.data.passcode;
+        if (currentRoomId === room.id) {
+          document.getElementById('current-room-title').innerText = `# ${room.name}`;
+        }
+      }
+    } else if (msg.name === 'delete-room') {
+      rooms = rooms.filter(r => r.id !== msg.data.id);
+      if (unreadRooms.has(msg.data.id)) unreadRooms.delete(msg.data.id);
+      if (currentRoomId === msg.data.id) {
+        selectRoom('global-general');
+      }
+    }
+  }
+
+  /* DM Directory Cloud Sync */
+  function syncDmDirectory() {
+    dmDirChannel = ably.channels.get('app-dm-directory', { params: { rewind: '100' } });
+
+    dmDirChannel.history({ limit: 100 }, (err, page) => {
+      if (!err && page.items) {
+        page.items.reverse().forEach(msg => {
+          if (msg.name === 'new-dm' && !dms.some(d => d.id === msg.data.id)) {
+            dms.push(msg.data);
+            attachUnreadListener(msg.data.id);
+          }
+        });
+      }
+      renderDmList();
+    });
+
+    dmDirChannel.subscribe('new-dm', msg => {
+      if (!dms.some(d => d.id === msg.data.id)) {
+        dms.push(msg.data);
+        attachUnreadListener(msg.data.id);
+        renderDmList();
+      }
+    });
+  }
+
+  /* Rendering Navigation Sidebar */
+  function renderRoomList() {
+    const listContainer = document.getElementById('room-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    rooms.forEach((room, idx) => {
+      attachUnreadListener(room.id);
+      const item = document.createElement('div');
+      item.className = `room-item ${room.id === currentRoomId ? 'active' : ''}`;
+      item.style.animationDelay = `${idx * 0.03}s`;
+      
+      const isPrivate = room.passcode && room.passcode.length > 0;
+      const isCreator = currentUser && room.creator && room.creator.toLowerCase() === currentUser.username.toLowerCase();
+      const hasUnread = unreadRooms.has(room.id);
+
+      item.innerHTML = `
+        <div class="room-info" onclick="attemptJoinRoom('${room.id}')" style="flex:1;">
+          <span class="room-icon">#</span>
+          <span class="room-name">${escapeHtml(room.name)}</span>
+        </div>
+        ${hasUnread 
+          ? `<span class="badge unread">Unread</span>`
+          : `<span class="badge ${isPrivate ? 'private' : 'public'}">${isPrivate ? 'Private' : 'Public'}</span>`
+        }
+        ${isCreator && !room.isDefault ? `
+          <button class="icon-btn" onclick="openCreatorSettingsModal(event, '${room.id}')" title="Channel Settings" style="margin-left:6px;">
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          </button>
+        ` : ''}
+      `;
+      listContainer.appendChild(item);
+    });
+  }
+
+  function renderDmList() {
+    const dmContainer = document.getElementById('dm-list');
+    if (!dmContainer || !currentUser) return;
+    dmContainer.innerHTML = '';
+
+    const myDms = dms.filter(d => 
+      d.user1.toLowerCase() === currentUser.username.toLowerCase() || 
+      d.user2.toLowerCase() === currentUser.username.toLowerCase()
+    );
+
+    myDms.forEach((dm, idx) => {
+      attachUnreadListener(dm.id);
+      const otherUser = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
+      const otherAcc = accountsDb[otherUser.toLowerCase()];
+      const hasUnread = unreadRooms.has(dm.id);
+
+      const item = document.createElement('div');
+      item.className = `room-item ${dm.id === currentRoomId ? 'active' : ''}`;
+      item.style.animationDelay = `${idx * 0.03}s`;
+      item.onclick = () => selectRoom(dm.id, `@${otherUser}`);
+
+      const avatarMarkup = (otherAcc && otherAcc.avatar) 
+        ? `<img src="${otherAcc.avatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" />`
+        : `@`;
+
+      item.innerHTML = `
+        <div class="room-info" style="flex:1;">
+          <span class="room-icon">${avatarMarkup}</span>
+          <span class="room-name">${escapeHtml(otherUser)}</span>
+        </div>
+        ${hasUnread 
+          ? `<span class="badge unread">Unread</span>`
+          : `<span class="badge dm">Direct</span>`
+        }
+      `;
+      dmContainer.appendChild(item);
+    });
+  }
+
+  /* DM Feature */
+  function createDM() {
+    const targetUser = document.getElementById('dm-target-username').value.trim();
+
+    if (!targetUser) {
+      alert('Please enter a username.');
+      return;
     }
 
-    function openCreatorSettingsModal(event, roomId) {
-      event.stopPropagation();
-      targetCreatorRoomId = roomId;
-      const room = rooms.find(r => r.id === roomId);
-
-      if (!room || room.creator.toLowerCase() !== currentUser.username.toLowerCase()) {
-        alert('Only the creator of this channel can manage its settings.');
-        return;
-      }
-
-      document.getElementById('edit-room-name').value = room.name;
-      document.getElementById('edit-room-pass').value = room.passcode || '';
-      openModal('creator-settings-modal');
+    if (targetUser.toLowerCase() === currentUser.username.toLowerCase()) {
+      alert('You cannot start a direct message with yourself.');
+      return;
     }
 
-    function saveRoomEdits() {
-      const newName = document.getElementById('edit-room-name').value.trim();
-      const newPass = document.getElementById('edit-room-pass').value.trim();
+    if (!accountsDb[targetUser.toLowerCase()]) {
+      alert(`User "@${targetUser}" was not found on HowApp.`);
+      return;
+    }
 
-      if (!newName) {
-        alert('Channel name cannot be empty.');
-        return;
+    const sortedUsers = [currentUser.username.toLowerCase(), targetUser.toLowerCase()].sort();
+    const dmId = `dm-${sortedUsers[0]}--${sortedUsers[1]}`;
+
+    const dmPayload = {
+      id: dmId,
+      user1: currentUser.username,
+      user2: targetUser
+    };
+
+    dmDirChannel.publish('new-dm', dmPayload);
+
+    document.getElementById('dm-target-username').value = '';
+    closeModal('create-dm-modal');
+
+    selectRoom(dmId, `@${targetUser}`);
+  }
+
+  /* Channel Room Operations */
+  function attemptJoinRoom(roomId) {
+    const room = rooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    if (room.passcode) {
+      pendingRoomId = roomId;
+      document.getElementById('room-pass-input').value = '';
+      openModal('passcode-modal');
+    } else {
+      selectRoom(roomId);
+    }
+  }
+
+  function verifyPasscode() {
+    const input = document.getElementById('room-pass-input').value;
+    const room = rooms.find(r => r.id === pendingRoomId);
+
+    if (room && room.passcode === input) {
+      selectRoom(pendingRoomId);
+      closeModal('passcode-modal');
+    } else {
+      alert('Incorrect passcode!');
+    }
+  }
+
+  function selectRoom(roomId, customTitle = null) {
+    // Unsubscribe previous active listener if exists
+    if (currentActiveChannel && activeMsgSubscriber) {
+      currentActiveChannel.unsubscribe('msg', activeMsgSubscriber);
+    }
+
+    // Clear unread status when opening the channel
+    if (unreadRooms.has(roomId)) {
+      unreadRooms.delete(roomId);
+    }
+
+    currentRoomId = roomId;
+    const room = rooms.find(r => r.id === roomId);
+    
+    const titleText = customTitle ? customTitle : `# ${room ? room.name : 'Channel'}`;
+    document.getElementById('current-room-title').innerText = titleText;
+    document.getElementById('messages-container').innerHTML = '';
+
+    currentActiveChannel = roomChannelsMap[roomId] || ably.channels.get(`chat-msg-${roomId}`, { params: { rewind: '100' } });
+    
+    // Fetch recent message history
+    currentActiveChannel.history({ limit: 100 }, (err, resultPage) => {
+      if (!err && resultPage.items) {
+        document.getElementById('messages-container').innerHTML = '';
+        const historyMsgs = resultPage.items.reverse();
+        historyMsgs.forEach(msg => appendMessage(msg.data));
       }
+    });
 
-      roomDirChannel.publish('update-room', {
-        id: targetCreatorRoomId,
-        name: newName,
-        passcode: newPass
-      });
+    // Attach real-time subscriber for active workspace viewing
+    activeMsgSubscriber = (msg) => {
+      appendMessage(msg.data);
+    };
+    currentActiveChannel.subscribe('msg', activeMsgSubscriber);
 
+    renderRoomList();
+    renderDmList();
+  }
+
+  function createRoom() {
+    const name = document.getElementById('new-room-name').value.trim();
+    const pass = document.getElementById('new-room-pass').value.trim();
+
+    if (!name) {
+      alert('Please enter a channel name.');
+      return;
+    }
+
+    const newRoom = {
+      id: 'room-' + Date.now(),
+      name: name,
+      passcode: pass,
+      creator: currentUser.username
+    };
+
+    roomDirChannel.publish('new-room', newRoom);
+
+    document.getElementById('new-room-name').value = '';
+    document.getElementById('new-room-pass').value = '';
+    closeModal('create-room-modal');
+
+    selectRoom(newRoom.id);
+  }
+
+  function openCreatorSettingsModal(event, roomId) {
+    event.stopPropagation();
+    targetCreatorRoomId = roomId;
+    const room = rooms.find(r => r.id === roomId);
+
+    if (!room || room.creator.toLowerCase() !== currentUser.username.toLowerCase()) {
+      alert('Only the creator of this channel can manage its settings.');
+      return;
+    }
+
+    document.getElementById('edit-room-name').value = room.name;
+    document.getElementById('edit-room-pass').value = room.passcode || '';
+    openModal('creator-settings-modal');
+  }
+
+  function saveRoomEdits() {
+    const newName = document.getElementById('edit-room-name').value.trim();
+    const newPass = document.getElementById('edit-room-pass').value.trim();
+
+    if (!newName) {
+      alert('Channel name cannot be empty.');
+      return;
+    }
+
+    roomDirChannel.publish('update-room', {
+      id: targetCreatorRoomId,
+      name: newName,
+      passcode: newPass
+    });
+
+    closeModal('creator-settings-modal');
+  }
+
+  function deleteRoom() {
+    const room = rooms.find(r => r.id === targetCreatorRoomId);
+
+    if (confirm(`Delete channel #${room ? room.name : ''}?`)) {
+      roomDirChannel.publish('delete-room', { id: targetCreatorRoomId });
       closeModal('creator-settings-modal');
     }
+  }
 
-    function deleteRoom() {
-      const room = rooms.find(r => r.id === targetCreatorRoomId);
+  /* Messaging Logic */
+  function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    if (!text || !currentActiveChannel) return;
 
-      if (confirm(`Delete channel #${room ? room.name : ''}?`)) {
-        roomDirChannel.publish('delete-room', { id: targetCreatorRoomId });
-        closeModal('creator-settings-modal');
-      }
-    }
+    const userAcc = accountsDb[currentUser.username.toLowerCase()];
+    const payload = {
+      user: currentUser.username,
+      avatar: (userAcc && userAcc.avatar) ? userAcc.avatar : (currentUser.avatar || ''),
+      text: text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
 
-    /* Messaging Logic */
-    function sendMessage() {
-      const input = document.getElementById('message-input');
-      const text = input.value.trim();
-      if (!text || !currentChannel) return;
+    currentActiveChannel.publish('msg', payload);
+    input.value = '';
+  }
 
-      const userAcc = accountsDb[currentUser.username.toLowerCase()];
-      const payload = {
-        user: currentUser.username,
-        avatar: (userAcc && userAcc.avatar) ? userAcc.avatar : (currentUser.avatar || ''),
-        text: text,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
+  function appendMessage(msg) {
+    const container = document.getElementById('messages-container');
+    const isOwn = currentUser && (msg.user === currentUser.username);
+    const msgEl = document.createElement('div');
+    msgEl.className = `message ${isOwn ? 'own' : ''}`;
+    
+    const initial = msg.user ? msg.user.charAt(0).toUpperCase() : '?';
+    const userAcc = accountsDb[msg.user ? msg.user.toLowerCase() : ''];
+    const avatarSrc = (userAcc && userAcc.avatar) ? userAcc.avatar : msg.avatar;
 
-      currentChannel.publish('msg', payload);
-      input.value = '';
-    }
+    const avatarMarkup = avatarSrc 
+      ? `<img src="${avatarSrc}" alt="${msg.user}" />`
+      : initial;
 
-    function appendMessage(msg) {
-      const container = document.getElementById('messages-container');
-      const isOwn = currentUser && (msg.user === currentUser.username);
-      const msgEl = document.createElement('div');
-      msgEl.className = `message ${isOwn ? 'own' : ''}`;
-      
-      const initial = msg.user ? msg.user.charAt(0).toUpperCase() : '?';
-      const userAcc = accountsDb[msg.user ? msg.user.toLowerCase() : ''];
-      const avatarSrc = (userAcc && userAcc.avatar) ? userAcc.avatar : msg.avatar;
-
-      const avatarMarkup = avatarSrc 
-        ? `<img src="${avatarSrc}" alt="${msg.user}" />`
-        : initial;
-
-      msgEl.innerHTML = `
-        <div class="avatar-container">${avatarMarkup}</div>
-        <div class="message-content-wrapper">
-          <div class="meta">
-            <span class="author">${escapeHtml(msg.user || 'Unknown')}</span>
-            <span>${msg.timestamp || ''}</span>
-          </div>
-          <div class="message-bubble">${escapeHtml(msg.text || '')}</div>
+    msgEl.innerHTML = `
+      <div class="avatar-container">${avatarMarkup}</div>
+      <div class="message-content-wrapper">
+        <div class="meta">
+          <span class="author">${escapeHtml(msg.user || 'Unknown')}</span>
+          <span>${msg.timestamp || ''}</span>
         </div>
-      `;
-      container.appendChild(msgEl);
-      container.scrollTop = container.scrollHeight;
-    }
+        <div class="message-bubble">${escapeHtml(msg.text || '')}</div>
+      </div>
+    `;
+    container.appendChild(msgEl);
+    container.scrollTop = container.scrollHeight;
+  }
 
-    function openModal(id) { 
-      document.getElementById(id).classList.remove('hidden'); 
-      const firstInput = document.getElementById(id).querySelector('input:not([disabled])');
-      if (firstInput) firstInput.focus();
-    }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function escapeHtml(str) { return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-  </script>
+  function openModal(id) { 
+    document.getElementById(id).classList.remove('hidden'); 
+    const firstInput = document.getElementById(id).querySelector('input:not([disabled])');
+    if (firstInput) firstInput.focus();
+  }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+  function escapeHtml(str) { return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+</script>
 </body>
 </html>
