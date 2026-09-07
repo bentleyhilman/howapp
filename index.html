@@ -6,10 +6,8 @@
   <title>HowApp</title>
 
   <!-- Favicon and Touch Icon -->
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="appleicon.png">
 
   <!-- Inter Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -76,6 +74,11 @@
     .sidebar-section { padding: 16px 12px; flex: 1; overflow-y: auto; }
     .section-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight: 700; margin-bottom: 10px; padding: 0 8px; display: flex; justify-content: space-between; align-items: center; }
 
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .room-item {
       display: flex;
       align-items: center;
@@ -86,12 +89,14 @@
       color: var(--text-muted);
       transition: all 0.2s ease;
       margin-bottom: 4px;
+      animation: slideIn 0.25s ease forwards;
     }
 
     .room-item:hover { background: var(--bg-hover); color: var(--text-main); }
     .room-item.active { background: var(--bg-hover); color: #fff; font-weight: 600; border-left: 3px solid var(--accent-solid); }
 
     .room-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+    .room-icon { font-weight: 700; color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
     .room-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .badge {
@@ -148,7 +153,7 @@
 
     .messages-container { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
 
-    .message { display: flex; gap: 12px; max-width: 80%; }
+    .message { display: flex; gap: 12px; max-width: 80%; animation: slideIn 0.2s ease forwards; }
     .message.own { align-self: flex-end; flex-direction: row-reverse; }
 
     .message .avatar-container { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; font-weight: 700; overflow: hidden; flex-shrink: 0; }
@@ -296,7 +301,7 @@
           <span id="user-badge-name" style="font-weight: 600; font-size: 0.9rem;">@guest</span>
         </div>
         <button class="icon-btn" onclick="openAccountSettings()" title="Settings">
-          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/></svg>
         </button>
       </div>
     </div>
@@ -425,15 +430,15 @@
       onSnapshot, addDoc, query, orderBy, serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-   const firebaseConfig = {
-  apiKey: "AIzaSyAj5N-Y00BUJOKUaPv9zhi3AxGoV9Xgl2Q",
-  authDomain: "realhowapp.firebaseapp.com",
-  projectId: "realhowapp",
-  storageBucket: "realhowapp.firebasestorage.app",
-  messagingSenderId: "842591375022",
-  appId: "1:842591375022:web:2635d947ba948d2874673f",
-  measurementId: "G-9Z5DPNQXV2"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyAj5N-Y00BUJOKUaPv9zhi3AxGoV9Xgl2Q",
+      authDomain: "realhowapp.firebaseapp.com",
+      projectId: "realhowapp",
+      storageBucket: "realhowapp.firebasestorage.app",
+      messagingSenderId: "842591375022",
+      appId: "1:842591375022:web:2635d947ba948d2874673f",
+      measurementId: "G-9Z5DPNQXV2"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -450,6 +455,7 @@
     let rooms = [];
     let dms = [];
     const unreadRooms = new Set();
+    const backgroundUnsubscribers = {};
 
     // DOM Utility
     window.handleEnter = (event, callback) => {
@@ -494,6 +500,36 @@
       listenToRooms();
       listenToDMs();
       selectRoom('global-general');
+    }
+
+    /* Background Message Unread Tracker */
+    function attachUnreadListener(roomId) {
+      if (backgroundUnsubscribers[roomId]) return;
+
+      const q = query(
+        collection(db, "chats", roomId, "messages"),
+        orderBy("timestamp", "asc")
+      );
+
+      let initialLoad = true;
+      const unsub = onSnapshot(q, (snapshot) => {
+        if (!initialLoad && snapshot.docChanges().length > 0) {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const msgData = change.doc.data();
+              if (currentUser && msgData.user !== currentUser.username && roomId !== currentRoomId) {
+                unreadRooms.add(roomId);
+                renderRoomList();
+                renderDmList();
+                triggerNotification(roomId, msgData);
+              }
+            }
+          });
+        }
+        initialLoad = false;
+      });
+
+      backgroundUnsubscribers[roomId] = unsub;
     }
 
     /* Auth Operations */
@@ -649,9 +685,11 @@
       if (!listContainer) return;
       listContainer.innerHTML = '';
 
-      rooms.forEach((room) => {
+      rooms.forEach((room, idx) => {
+        attachUnreadListener(room.id);
         const item = document.createElement('div');
         item.className = `room-item ${room.id === currentRoomId ? 'active' : ''}`;
+        item.style.animationDelay = `${idx * 0.03}s`;
 
         const isPrivate = room.passcode && room.passcode.length > 0;
         const isCreator = currentUser && room.creator && room.creator.toLowerCase() === currentUser.username.toLowerCase();
@@ -659,7 +697,7 @@
 
         item.innerHTML = `
           <div class="room-info" onclick="attemptJoinRoom('${room.id}')" style="flex:1;">
-            <span style="font-weight:700; color:var(--text-muted)">#</span>
+            <span class="room-icon">#</span>
             <span class="room-name">${escapeHtml(room.name)}</span>
           </div>
           ${hasUnread 
@@ -668,7 +706,7 @@
           }
           ${isCreator && !room.isDefault ? `
             <button class="icon-btn" onclick="openCreatorSettingsModal(event, '${room.id}')" title="Settings" style="margin-left:6px;">
-              <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/></svg>
             </button>
           ` : ''}
         `;
@@ -697,13 +735,15 @@
         d.user2.toLowerCase() === currentUser.username.toLowerCase()
       );
 
-      myDms.forEach((dm) => {
+      myDms.forEach((dm, idx) => {
+        attachUnreadListener(dm.id);
         const otherUser = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
         const otherAcc = accountsDb[otherUser.toLowerCase()];
         const hasUnread = unreadRooms.has(dm.id);
 
         const item = document.createElement('div');
         item.className = `room-item ${dm.id === currentRoomId ? 'active' : ''}`;
+        item.style.animationDelay = `${idx * 0.03}s`;
         item.onclick = () => selectRoom(dm.id, `@${otherUser}`);
 
         const avatarMarkup = (otherAcc && otherAcc.avatar) 
@@ -712,7 +752,7 @@
 
         item.innerHTML = `
           <div class="room-info" style="flex:1;">
-            <span>${avatarMarkup}</span>
+            <span class="room-icon">${avatarMarkup}</span>
             <span class="room-name">${escapeHtml(otherUser)}</span>
           </div>
           ${hasUnread 
@@ -840,7 +880,6 @@
         orderBy("timestamp", "asc")
       );
 
-      let initialLoad = true;
       activeMessageUnsubscribe = onSnapshot(q, (snapshot) => {
         const container = document.getElementById('messages-container');
         container.innerHTML = '';
@@ -849,19 +888,6 @@
           const msg = docSnap.data();
           appendMessageUI(msg);
         });
-
-        // Trigger device push notifications for live new messages when off-focus
-        if (!initialLoad && snapshot.docChanges().length > 0) {
-          snapshot.docChanges().forEach((change) => {
-            if (change.type === "added") {
-              const msgData = change.doc.data();
-              if (msgData.user !== currentUser.username) {
-                triggerNotification(roomId, msgData);
-              }
-            }
-          });
-        }
-        initialLoad = false;
       });
 
       renderRoomList();
