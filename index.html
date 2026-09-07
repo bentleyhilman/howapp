@@ -3,39 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HowApp — Premium Realtime Messaging</title>
+  <title>HowApp — Modern Realtime Chat</title>
   <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-main: #06080d;
-      --panel-bg: rgba(15, 21, 34, 0.65);
+      --bg-main: #05070c;
+      --panel-bg: rgba(13, 18, 30, 0.7);
       --panel-border: rgba(255, 255, 255, 0.08);
-      --panel-hover: rgba(255, 255, 255, 0.05);
+      --panel-hover: rgba(255, 255, 255, 0.06);
       
-      /* Animated Rainbow Gradient Variables */
-      --rainbow-gradient: linear-gradient(
-        120deg, 
-        #ff2a5f 0%, 
-        #ff7e29 16%, 
-        #f8b800 33%, 
-        #00d26a 50%, 
-        #00bfff 66%, 
-        #7952f5 83%, 
-        #d800ff 100%
-      );
+      --accent-primary: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-cyan: #06b6d4;
+      --accent-pink: #ec4899;
       
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
 
       --radius-lg: 24px;
-      --radius-md: 14px;
-      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-sm: 10px;
 
-      --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --spring-physics: cubic-bezier(0.34, 1.56, 0.64, 1);
       --smooth-out: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -58,82 +51,59 @@
       position: relative;
     }
 
-    /* Animated Ambient Lights */
-    .bg-grid {
+    /* Abstract Organic Mesh Animated Gradient Background */
+    .abstract-bg {
       position: absolute;
-      inset: 0;
-      background-image: 
-        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-      background-size: 48px 48px;
+      inset: -20%;
       z-index: 0;
       pointer-events: none;
+      overflow: hidden;
+      filter: blur(100px);
+      opacity: 0.6;
     }
 
-    .glow-sphere {
+    .mesh-blob {
       position: absolute;
       border-radius: 50%;
-      filter: blur(140px);
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.35;
-      animation: floatGlow 18s infinite alternate ease-in-out;
+      animation: floatAbstract 20s infinite alternate ease-in-out;
     }
 
-    .glow-1 {
-      width: 550px;
-      height: 550px;
-      top: -15%;
-      left: -10%;
-      background: radial-gradient(circle, #7952f5 0%, transparent 70%);
-    }
-
-    .glow-2 {
+    .blob-1 {
       width: 600px;
       height: 600px;
-      bottom: -20%;
-      right: -10%;
-      background: radial-gradient(circle, #ff2a5f 0%, transparent 70%);
-      animation-delay: -9s;
-    }
-
-    .glow-3 {
-      width: 400px;
-      height: 400px;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: radial-gradient(circle, #00bfff 0%, transparent 70%);
+      top: 10%;
+      left: 15%;
+      background: conic-gradient(from 0deg at 50% 50%, #6366f1, #ec4899, #06b6d4, #6366f1);
       animation-duration: 22s;
     }
 
-    @keyframes floatGlow {
-      0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-      100% { transform: translate(50px, 40px) scale(1.15) rotate(15deg); }
+    .blob-2 {
+      width: 700px;
+      height: 700px;
+      bottom: 5%;
+      right: 10%;
+      background: radial-gradient(circle at center, #8b5cf6 0%, #3b82f6 50%, transparent 80%);
+      animation-duration: 18s;
+      animation-delay: -5s;
     }
 
-    /* Dynamic Flowing Rainbow Utility */
-    .rainbow-text {
-      background: var(--rainbow-gradient);
-      background-size: 300% 300%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: flowRainbow 12s ease infinite;
+    .blob-3 {
+      width: 500px;
+      height: 500px;
+      top: 45%;
+      left: 45%;
+      background: conic-gradient(from 180deg at 50% 50%, #f43f5e, #a855f7, #10b981);
+      animation-duration: 25s;
+      animation-delay: -10s;
     }
 
-    .rainbow-bg {
-      background: var(--rainbow-gradient);
-      background-size: 300% 300%;
-      animation: flowRainbow 12s ease infinite;
+    @keyframes floatAbstract {
+      0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+      33% { transform: translate(60px, -80px) rotate(120deg) scale(1.15); }
+      66% { transform: translate(-50px, 50px) rotate(240deg) scale(0.9); }
+      100% { transform: translate(0, 0) rotate(360deg) scale(1); }
     }
 
-    @keyframes flowRainbow {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* Main Container */
     .app-container {
       position: relative;
       z-index: 10;
@@ -141,67 +111,102 @@
       max-width: 1240px;
       height: 88vh;
       background: var(--panel-bg);
-      backdrop-filter: blur(32px);
-      -webkit-backdrop-filter: blur(32px);
+      backdrop-filter: blur(36px);
+      -webkit-backdrop-filter: blur(36px);
       border: 1px solid var(--panel-border);
       border-radius: var(--radius-lg);
       display: flex;
       overflow: hidden;
-      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), 0 0 50px rgba(121, 82, 245, 0.12);
-      animation: appAppear 0.9s var(--smooth-out);
+      box-shadow: 0 40px 90px rgba(0, 0, 0, 0.8), 0 0 60px rgba(99, 102, 241, 0.15);
+      animation: appEntrance 0.8s var(--smooth-out);
     }
 
-    @keyframes appAppear {
-      from { opacity: 0; transform: scale(0.95) translateY(30px); }
+    @keyframes appEntrance {
+      from { opacity: 0; transform: scale(0.94) translateY(30px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
-    /* Overlays & Modals */
+    /* Modal & Overlay Architecture */
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(3, 6, 15, 0.82);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: rgba(3, 5, 12, 0.82);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       display: flex;
       justify-content: center;
       align-items: center;
       z-index: 100;
-      animation: fadeIn 0.3s var(--smooth-out);
+      animation: overlayFade 0.35s var(--smooth-out);
+    }
+
+    @keyframes overlayFade {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     .modal {
-      background: rgba(18, 25, 41, 0.92);
+      background: rgba(18, 24, 38, 0.95);
       border: 1px solid rgba(255, 255, 255, 0.12);
       padding: 36px;
       border-radius: var(--radius-lg);
       width: 90%;
-      max-width: 440px;
+      max-width: 420px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
-      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85), 0 0 40px rgba(121, 82, 245, 0.2);
-      animation: modalPop 0.45s var(--spring-bounce);
+      gap: 16px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(99, 102, 241, 0.2);
+      animation: modalPop 0.45s var(--spring-physics);
     }
 
     @keyframes modalPop {
-      from { opacity: 0; transform: scale(0.85) translateY(20px); }
+      from { opacity: 0; transform: scale(0.82) translateY(24px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
+    .modal-tabs {
+      display: flex;
+      background: rgba(10, 14, 23, 0.6);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      margin-bottom: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      box-shadow: none;
+      transition: all 0.25s var(--smooth-out);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-primary);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+    }
+
     .modal h2 {
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       font-weight: 800;
       letter-spacing: -0.5px;
+      color: #fff;
     }
 
     .modal label {
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      margin-bottom: -10px;
+      margin-bottom: -8px;
     }
 
     input[type="text"], input[type="password"] {
@@ -209,7 +214,7 @@
       padding: 14px 18px;
       border-radius: var(--radius-md);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(8, 12, 22, 0.85);
+      background: rgba(8, 12, 20, 0.8);
       color: #fff;
       font-size: 0.95rem;
       outline: none;
@@ -217,63 +222,64 @@
     }
 
     input[type="text"]:focus, input[type="password"]:focus {
-      border-color: #00bfff;
-      box-shadow: 0 0 0 4px rgba(0, 191, 255, 0.2), 0 0 20px rgba(0, 191, 255, 0.15);
-      background: rgba(8, 12, 22, 0.95);
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.22), 0 0 20px rgba(99, 102, 241, 0.15);
+      background: rgba(8, 12, 20, 0.95);
     }
 
-    /* Micro-Interactive Premium Buttons */
+    /* Buttons & Interactive Physics */
     button {
       padding: 14px 22px;
       border: none;
       border-radius: var(--radius-md);
+      background: var(--accent-primary);
       color: white;
       font-weight: 700;
       font-size: 0.92rem;
       cursor: pointer;
-      transition: all 0.25s var(--smooth-out);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.25s var(--spring-physics);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
       position: relative;
       overflow: hidden;
     }
 
     button:hover {
+      background: var(--accent-hover);
       transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
-      filter: brightness(1.12);
+      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.5);
     }
 
     button:active {
-      transform: translateY(1px) scale(0.98);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: translateY(1px) scale(0.97);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
     }
 
     button.secondary {
-      background: rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.08);
       color: var(--text-muted);
-      border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: none;
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     button.secondary:hover {
-      background: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.15);
       color: #fff;
       border-color: rgba(255, 255, 255, 0.2);
     }
 
     button.danger {
-      background: linear-gradient(135deg, #ff2a5f 0%, #e11d48 100%);
-      box-shadow: 0 6px 20px rgba(255, 42, 95, 0.35);
+      background: #f43f5e;
+      box-shadow: 0 6px 20px rgba(244, 63, 94, 0.35);
     }
 
     button.danger:hover {
-      box-shadow: 0 10px 30px rgba(255, 42, 95, 0.55);
+      background: #e11d48;
+      box-shadow: 0 10px 28px rgba(244, 63, 94, 0.55);
     }
 
-    /* Custom SVG Icons */
     .icon-btn {
       background: transparent;
-      padding: 6px;
+      padding: 8px;
       border-radius: var(--radius-sm);
       display: inline-flex;
       align-items: center;
@@ -281,14 +287,14 @@
       cursor: pointer;
       border: none;
       box-shadow: none;
-      color: var(--text-dim);
-      transition: all 0.2s var(--smooth-out);
+      color: var(--text-muted);
+      transition: all 0.25s var(--spring-physics);
     }
 
     .icon-btn:hover {
       background: rgba(255, 255, 255, 0.08);
       color: #fff;
-      transform: scale(1.12);
+      transform: scale(1.15) rotate(5deg);
       box-shadow: none;
     }
 
@@ -298,17 +304,17 @@
       fill: currentColor;
     }
 
-    /* Sidebar Area */
+    /* Sidebar Interface */
     .sidebar {
       width: 320px;
-      background: rgba(9, 13, 22, 0.55);
+      background: rgba(8, 12, 20, 0.5);
       border-right: 1px solid var(--panel-border);
       display: flex;
       flex-direction: column;
     }
 
     .sidebar-header {
-      padding: 26px 22px;
+      padding: 24px 22px;
       border-bottom: 1px solid var(--panel-border);
       display: flex;
       justify-content: space-between;
@@ -318,33 +324,54 @@
     .brand {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 6px;
     }
 
     .brand-title {
       font-weight: 800;
       font-size: 1.4rem;
       letter-spacing: -0.6px;
+      color: #fff;
     }
 
-    .user-badge-container {
+    .user-profile-badge {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 6px 10px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      transition: all 0.25s var(--smooth-out);
     }
 
-    .user-badge {
-      font-size: 0.78rem;
+    .user-profile-badge:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .profile-avatar-mini {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--accent-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .user-badge-name {
+      font-size: 0.8rem;
       font-weight: 700;
-      color: #00bfff;
-      background: rgba(0, 191, 255, 0.1);
-      padding: 3px 10px;
-      border-radius: 20px;
-      border: 1px solid rgba(0, 191, 255, 0.25);
-      display: inline-block;
+      color: var(--text-main);
     }
 
-    /* Flat Clean Plus Icon Button */
     .add-icon-btn {
       background: transparent;
       padding: 8px;
@@ -356,13 +383,13 @@
       color: var(--text-muted);
       border: none;
       box-shadow: none;
-      transition: all 0.25s var(--spring-bounce);
+      transition: all 0.25s var(--spring-physics);
     }
 
     .add-icon-btn:hover {
       background: rgba(255, 255, 255, 0.08);
       color: #fff;
-      transform: scale(1.18) rotate(90deg);
+      transform: scale(1.2) rotate(90deg);
       box-shadow: none;
     }
 
@@ -373,7 +400,7 @@
     }
 
     .room-list-header {
-      padding: 18px 22px 10px;
+      padding: 20px 22px 10px;
       font-size: 0.72rem;
       font-weight: 800;
       text-transform: uppercase;
@@ -400,6 +427,12 @@
       align-items: center;
       transition: all 0.25s var(--smooth-out);
       border: 1px solid transparent;
+      animation: itemSlideIn 0.35s var(--smooth-out) backwards;
+    }
+
+    @keyframes itemSlideIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
     }
 
     .room-item:hover {
@@ -409,8 +442,8 @@
     }
 
     .room-item.active {
-      background: rgba(121, 82, 245, 0.14);
-      border-color: rgba(121, 82, 245, 0.35);
+      background: rgba(99, 102, 241, 0.16);
+      border-color: rgba(99, 102, 241, 0.35);
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     }
 
@@ -427,12 +460,12 @@
     }
 
     .room-item.active .room-icon {
-      color: #7952f5;
+      color: var(--accent-primary);
     }
 
     .room-name {
       font-weight: 600;
-      font-size: 0.94rem;
+      font-size: 0.92rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -450,15 +483,15 @@
     }
 
     .badge.public {
-      background: rgba(0, 210, 106, 0.12);
-      color: #00d26a;
-      border: 1px solid rgba(0, 210, 106, 0.25);
+      background: rgba(6, 182, 212, 0.12);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.25);
     }
 
     .badge.private {
-      background: rgba(255, 42, 95, 0.12);
-      color: #ff2a5f;
-      border: 1px solid rgba(255, 42, 95, 0.25);
+      background: rgba(244, 63, 94, 0.12);
+      color: #f43f5e;
+      border: 1px solid rgba(244, 63, 94, 0.25);
     }
 
     /* Main Chat Workspace */
@@ -466,7 +499,7 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      background: rgba(11, 16, 27, 0.45);
+      background: rgba(10, 14, 24, 0.4);
     }
 
     .chat-header {
@@ -475,7 +508,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      background: rgba(8, 12, 22, 0.35);
+      background: rgba(8, 12, 20, 0.3);
     }
 
     .chat-header-title {
@@ -496,9 +529,9 @@
     .online-indicator {
       width: 8px;
       height: 8px;
-      background-color: #00d26a;
+      background-color: #10b981;
       border-radius: 50%;
-      box-shadow: 0 0 10px #00d26a;
+      box-shadow: 0 0 10px #10b981;
     }
 
     .messages-container {
@@ -507,7 +540,7 @@
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 14px;
       scroll-behavior: smooth;
     }
 
@@ -522,15 +555,16 @@
       border-radius: 10px;
     }
 
+    /* Refined, Modern & Rounded Chat Bubbles (No Gradients) */
     .message {
       max-width: 65%;
       display: flex;
-      gap: 14px;
-      animation: messageSlide 0.4s var(--spring-bounce);
+      gap: 12px;
+      animation: messagePopIn 0.35s var(--spring-physics);
     }
 
-    @keyframes messageSlide {
-      from { opacity: 0; transform: translateY(16px) scale(0.96); }
+    @keyframes messagePopIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.95); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
@@ -539,23 +573,26 @@
       flex-direction: row-reverse;
     }
 
-    .avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #7952f5, #00bfff);
+    .avatar-container {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--accent-primary);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: #fff;
-      flex-shrink: 0;
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
-    .message.own .avatar {
-      background: linear-gradient(135deg, #ff2a5f, #f8b800);
+    .avatar-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .message-content-wrapper {
@@ -569,7 +606,7 @@
     }
 
     .message .meta {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-dim);
       display: flex;
       gap: 8px;
@@ -582,61 +619,87 @@
     }
 
     .message-bubble {
-      padding: 13px 20px;
-      border-radius: 18px;
-      background: rgba(24, 33, 54, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 10px 16px;
+      border-radius: 20px;
+      background: rgba(22, 30, 48, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.07);
       color: var(--text-main);
-      font-size: 0.95rem;
-      line-height: 1.5;
+      font-size: 0.9rem;
+      line-height: 1.45;
       word-break: break-word;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
-      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s var(--smooth-out);
     }
 
+    .message-bubble:hover {
+      transform: scale(1.01);
+    }
+
+    /* Clean Solid Accent for Own Messages */
     .message.own .message-bubble {
-      background: var(--rainbow-gradient);
-      background-size: 300% 300%;
-      animation: flowRainbow 12s ease infinite;
-      color: #fff;
+      background: var(--accent-primary);
+      color: #ffffff;
       border: none;
-      box-shadow: 0 8px 25px rgba(216, 0, 255, 0.3);
+      box-shadow: 0 5px 18px rgba(99, 102, 241, 0.35);
     }
 
-    /* Input Workspace Dock */
+    /* Input Dock */
     .input-area {
-      padding: 22px 28px;
-      background: rgba(8, 12, 22, 0.4);
+      padding: 20px 28px;
+      background: rgba(8, 12, 20, 0.4);
       border-top: 1px solid var(--panel-border);
       display: flex;
-      gap: 14px;
+      gap: 12px;
       align-items: center;
     }
 
     .input-area input {
       flex: 1;
-      padding: 16px 22px;
+      padding: 15px 22px;
       border-radius: 30px;
-      background: rgba(14, 21, 37, 0.85);
+      background: rgba(14, 20, 34, 0.85);
       border: 1px solid rgba(255, 255, 255, 0.1);
       font-size: 0.95rem;
     }
 
     .input-area button {
       border-radius: 30px;
-      padding: 16px 30px;
+      padding: 15px 28px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .hidden {
-      display: none !important;
+    /* Profile Avatar Settings Preview */
+    .avatar-preview-box {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: rgba(10, 14, 24, 0.8);
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      margin: 0 auto;
+      transition: all 0.25s var(--smooth-out);
+      position: relative;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    .avatar-preview-box:hover {
+      border-color: var(--accent-primary);
+      transform: scale(1.05);
+    }
+
+    .avatar-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hidden {
+      display: none !important;
     }
 
     @media (max-width: 768px) {
@@ -665,29 +728,68 @@
 </head>
 <body>
 
-  <div class="bg-grid"></div>
-  <div class="glow-sphere glow-1"></div>
-  <div class="glow-sphere glow-2"></div>
-  <div class="glow-sphere glow-3"></div>
+  <div class="abstract-bg">
+    <div class="mesh-blob blob-1"></div>
+    <div class="mesh-blob blob-2"></div>
+    <div class="mesh-blob blob-3"></div>
+  </div>
 
-  <div id="username-modal" class="overlay">
+  <div id="auth-modal" class="overlay">
     <div class="modal">
-      <h2 id="username-modal-title" class="rainbow-text">Welcome to HowApp</h2>
-      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">Enter a display name to start chatting across devices.</p>
-      <label>Display Name</label>
-      <input type="text" id="username-input" placeholder="e.g. Alex" autofocus onkeydown="handleEnter(event, saveUsername)" />
-      <button class="rainbow-bg" onclick="saveUsername()">Save Name →</button>
+      <h2>Welcome to HowApp</h2>
+      <div class="modal-tabs">
+        <button id="tab-login-btn" class="tab-btn active" onclick="switchAuthTab('login')">Sign In</button>
+        <button id="tab-signup-btn" class="tab-btn" onclick="switchAuthTab('signup')">Create Account</button>
+      </div>
+
+      <div id="login-view" style="display: flex; flex-direction: column; gap: 14px;">
+        <label>Username</label>
+        <input type="text" id="login-username" placeholder="Enter your username" onkeydown="handleEnter(event, processLogin)" />
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" onkeydown="handleEnter(event, processLogin)" />
+        <button onclick="processLogin()" style="margin-top: 6px;">Sign In →</button>
+      </div>
+
+      <div id="signup-view" class="hidden" style="display: flex; flex-direction: column; gap: 14px;">
+        <label>New Username</label>
+        <input type="text" id="signup-username" placeholder="Choose a username" onkeydown="handleEnter(event, processSignup)" />
+        <label>New Password</label>
+        <input type="password" id="signup-password" placeholder="••••••••" onkeydown="handleEnter(event, processSignup)" />
+        <button onclick="processSignup()" style="margin-top: 6px;">Create Account →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="account-settings-modal" class="overlay hidden">
+    <div class="modal">
+      <h2>Account Settings</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">Customize your profile or manage your account.</p>
+
+      <div class="avatar-preview-box" onclick="document.getElementById('avatar-file-input').click()" title="Click to upload picture">
+        <div id="avatar-preview-placeholder" style="font-size:0.75rem; color: var(--text-muted); text-align:center;">Upload<br>Photo</div>
+        <img id="avatar-preview-img" class="hidden" alt="Profile" />
+      </div>
+      <input type="file" id="avatar-file-input" accept="image/*" class="hidden" onchange="handleAvatarSelect(event)" />
+
+      <label>Display Username</label>
+      <input type="text" id="settings-username" placeholder="Username" onkeydown="handleEnter(event, saveAccountSettings)" />
+
+      <div style="display:flex; flex-direction:column; gap: 10px; margin-top: 8px;">
+        <button onclick="saveAccountSettings()">Save Settings</button>
+        <button onclick="processLogout()" class="danger">Log Out</button>
+        <button onclick="closeModal('account-settings-modal')" class="secondary">Cancel</button>
+      </div>
     </div>
   </div>
 
   <div id="passcode-modal" class="overlay hidden">
     <div class="modal">
-      <h2 class="rainbow-text">Protected Channel</h2>
-      <p style="font-size: 0.9rem; color: var(--text-muted);">Enter passcode to access this room.</p>
+      <h2>Protected Channel</h2>
+      <p style="font-size: 0.88rem; color: var(--text-muted);">Enter passcode to access this channel.</p>
       <label>Room Passcode</label>
       <input type="password" id="room-pass-input" placeholder="••••••••" onkeydown="handleEnter(event, verifyPasscode)" />
       <div style="display:flex; gap: 10px; margin-top: 6px;">
-        <button class="rainbow-bg" onclick="verifyPasscode()" style="flex:1;">Enter Room</button>
+        <button onclick="verifyPasscode()" style="flex:1;">Enter Room</button>
         <button onclick="closeModal('passcode-modal')" class="secondary">Cancel</button>
       </div>
     </div>
@@ -695,15 +797,15 @@
 
   <div id="create-room-modal" class="overlay hidden">
     <div class="modal">
-      <h2 class="rainbow-text">Create New Channel</h2>
+      <h2>Create Channel</h2>
       <label>Channel Name</label>
       <input type="text" id="new-room-name" placeholder="e.g. Lounge" onkeydown="handleEnter(event, createRoom)" />
       <label>Access Passcode (Optional)</label>
       <input type="password" id="new-room-pass" placeholder="Leave empty for public" onkeydown="handleEnter(event, createRoom)" />
       <label>Admin Password (Required)</label>
-      <input type="password" id="new-room-admin-pass" placeholder="Needed to manage/delete room" onkeydown="handleEnter(event, createRoom)" />
+      <input type="password" id="new-room-admin-pass" placeholder="Needed to edit/delete room" onkeydown="handleEnter(event, createRoom)" />
       <div style="display:flex; gap: 10px; margin-top: 8px;">
-        <button class="rainbow-bg" onclick="createRoom()" style="flex:1;">Create Channel</button>
+        <button onclick="createRoom()" style="flex:1;">Create Channel</button>
         <button onclick="closeModal('create-room-modal')" class="secondary">Cancel</button>
       </div>
     </div>
@@ -711,12 +813,12 @@
 
   <div id="admin-auth-modal" class="overlay hidden">
     <div class="modal">
-      <h2 class="rainbow-text">Admin Verification</h2>
+      <h2>Admin Verification</h2>
       <p style="font-size: 0.85rem; color: var(--text-muted);">Enter the Admin Password to unlock settings for this channel.</p>
       <label>Admin Password</label>
       <input type="password" id="admin-auth-pass" placeholder="••••••••" onkeydown="handleEnter(event, verifyAdminPassword)" />
       <div style="display:flex; gap: 10px; margin-top: 8px;">
-        <button class="rainbow-bg" onclick="verifyAdminPassword()" style="flex:1;">Unlock Settings</button>
+        <button onclick="verifyAdminPassword()" style="flex:1;">Unlock Settings</button>
         <button onclick="closeModal('admin-auth-modal')" class="secondary">Cancel</button>
       </div>
     </div>
@@ -724,14 +826,14 @@
 
   <div id="admin-settings-modal" class="overlay hidden">
     <div class="modal">
-      <h2 class="rainbow-text">Channel Settings</h2>
+      <h2>Channel Settings</h2>
       <p style="font-size: 0.85rem; color: var(--text-muted);">Update channel details or permanently remove it.</p>
       <label>Channel Name</label>
       <input type="text" id="edit-room-name" placeholder="Channel Name" onkeydown="handleEnter(event, saveRoomEdits)" />
       <label>New Access Passcode (Optional)</label>
       <input type="password" id="edit-room-pass" placeholder="Leave blank for public" onkeydown="handleEnter(event, saveRoomEdits)" />
       <div style="display:flex; flex-direction:column; gap: 10px; margin-top: 8px;">
-        <button class="rainbow-bg" onclick="saveRoomEdits()">Save Changes</button>
+        <button onclick="saveRoomEdits()">Save Changes</button>
         <button onclick="deleteRoom()" class="danger">Delete Channel</button>
         <button onclick="closeModal('admin-settings-modal')" class="secondary">Cancel</button>
       </div>
@@ -743,12 +845,10 @@
     <div class="sidebar">
       <div class="sidebar-header">
         <div class="brand">
-          <div class="brand-title rainbow-text">HowApp</div>
-          <div class="user-badge-container">
-            <div id="user-display" class="user-badge">@user</div>
-            <button class="icon-btn" onclick="openUsernameEdit()" title="Edit Name">
-              <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-            </button>
+          <div class="brand-title">HowApp</div>
+          <div class="user-profile-badge" onclick="openAccountSettings()" title="Account Settings">
+            <div id="user-badge-avatar" class="profile-avatar-mini">?</div>
+            <span id="user-badge-name" class="user-badge-name">@user</span>
           </div>
         </div>
         <button class="add-icon-btn" onclick="openModal('create-room-modal')" title="Create Channel">
@@ -774,7 +874,7 @@
 
       <div class="input-area">
         <input type="text" id="message-input" placeholder="Message channel..." onkeydown="handleEnter(event, sendMessage)" />
-        <button class="rainbow-bg" onclick="sendMessage()">
+        <button onclick="sendMessage()">
           Send <span>➔</span>
         </button>
       </div>
@@ -786,23 +886,26 @@
     const ABLY_API_KEY = 'LDAdyw.d365Vw:DgFTHDyC7dDCOglWbLR7ETmDhw5eJudFqcpM0V1XGyg';
 
     let ably, globalChannel, currentChannel;
-    let username = localStorage.getItem('chat_username') || '';
+    let currentUser = null; // Session User Object: { username, avatar }
     let currentRoomId = null;
     let pendingRoomId = null;
     let targetAdminRoomId = null;
+    let tempAvatarBase64 = null;
 
     let rooms = [
       { id: 'global-general', name: 'General', passcode: '', adminPasscode: '', isDefault: true }
     ];
 
     window.onload = function() {
-      if (username) {
-        document.getElementById('username-modal').classList.add('hidden');
+      // Check for saved login session in localStorage
+      const savedSession = localStorage.getItem('howapp_session');
+      if (savedSession) {
+        currentUser = JSON.parse(savedSession);
+        document.getElementById('auth-modal').classList.add('hidden');
         initChat();
       }
     };
 
-    // Universal Enter Key Trigger Utility
     function handleEnter(event, callback) {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -810,27 +913,162 @@
       }
     }
 
-    function saveUsername() {
-      const input = document.getElementById('username-input').value.trim();
-      if (!input) return;
-      username = input;
-      localStorage.setItem('chat_username', username);
-      document.getElementById('user-display').innerText = `@${username}`;
-      document.getElementById('username-modal').classList.add('hidden');
-      
-      if (!ably) {
-        initChat();
+    /* Account & Authentication System Logic */
+    function switchAuthTab(tab) {
+      const loginView = document.getElementById('login-view');
+      const signupView = document.getElementById('signup-view');
+      const tabLoginBtn = document.getElementById('tab-login-btn');
+      const tabSignupBtn = document.getElementById('tab-signup-btn');
+
+      if (tab === 'login') {
+        loginView.classList.remove('hidden');
+        signupView.classList.add('hidden');
+        tabLoginBtn.classList.add('active');
+        tabSignupBtn.classList.remove('active');
+      } else {
+        signupView.classList.remove('hidden');
+        loginView.classList.add('hidden');
+        tabSignupBtn.classList.add('active');
+        tabLoginBtn.classList.remove('active');
       }
     }
 
-    function openUsernameEdit() {
-      document.getElementById('username-modal-title').innerText = "Edit Username";
-      document.getElementById('username-input').value = username;
-      openModal('username-modal');
+    function getUsersDb() {
+      return JSON.parse(localStorage.getItem('howapp_accounts') || '[]');
     }
 
+    function saveUsersDb(users) {
+      localStorage.setItem('howapp_accounts', JSON.stringify(users));
+    }
+
+    function processSignup() {
+      const u = document.getElementById('signup-username').value.trim();
+      const p = document.getElementById('signup-password').value.trim();
+
+      if (!u || !p) {
+        alert('Please fill in all fields.');
+        return;
+      }
+
+      const users = getUsersDb();
+      if (users.some(acc => acc.username.toLowerCase() === u.toLowerCase())) {
+        alert('Username is already taken!');
+        return;
+      }
+
+      const newUser = { username: u, password: p, avatar: '' };
+      users.push(newUser);
+      saveUsersDb(users);
+
+      loginUser(newUser);
+    }
+
+    function processLogin() {
+      const u = document.getElementById('login-username').value.trim();
+      const p = document.getElementById('login-password').value.trim();
+
+      const users = getUsersDb();
+      const match = users.find(acc => acc.username.toLowerCase() === u.toLowerCase() && acc.password === p);
+
+      if (!match) {
+        alert('Invalid username or password.');
+        return;
+      }
+
+      loginUser(match);
+    }
+
+    function loginUser(userObj) {
+      currentUser = { username: userObj.username, avatar: userObj.avatar || '' };
+      localStorage.setItem('howapp_session', JSON.stringify(currentUser));
+      document.getElementById('auth-modal').classList.add('hidden');
+      initChat();
+    }
+
+    function processLogout() {
+      localStorage.removeItem('howapp_session');
+      window.location.reload();
+    }
+
+    function openAccountSettings() {
+      document.getElementById('settings-username').value = currentUser.username;
+      tempAvatarBase64 = currentUser.avatar || null;
+      
+      const previewImg = document.getElementById('avatar-preview-img');
+      const placeholder = document.getElementById('avatar-preview-placeholder');
+
+      if (tempAvatarBase64) {
+        previewImg.src = tempAvatarBase64;
+        previewImg.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+      } else {
+        previewImg.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+      }
+
+      openModal('account-settings-modal');
+    }
+
+    function handleAvatarSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = 80;
+          canvas.height = 80;
+          ctx.drawImage(img, 0, 0, 80, 80);
+          tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+          const previewImg = document.getElementById('avatar-preview-img');
+          previewImg.src = tempAvatarBase64;
+          previewImg.classList.remove('hidden');
+          document.getElementById('avatar-preview-placeholder').classList.add('hidden');
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function saveAccountSettings() {
+      const newU = document.getElementById('settings-username').value.trim();
+      if (!newU) return;
+
+      // Update Database
+      const users = getUsersDb();
+      const acc = users.find(u => u.username.toLowerCase() === currentUser.username.toLowerCase());
+      if (acc) {
+        acc.username = newU;
+        acc.avatar = tempAvatarBase64 || '';
+        saveUsersDb(users);
+      }
+
+      currentUser.username = newU;
+      currentUser.avatar = tempAvatarBase64 || '';
+      localStorage.setItem('howapp_session', JSON.stringify(currentUser));
+
+      updateUserUI();
+      closeModal('account-settings-modal');
+    }
+
+    function updateUserUI() {
+      document.getElementById('user-badge-name').innerText = `@${currentUser.username}`;
+      const badgeAvatar = document.getElementById('user-badge-avatar');
+
+      if (currentUser.avatar) {
+        badgeAvatar.innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+      } else {
+        badgeAvatar.innerText = currentUser.username.charAt(0).toUpperCase();
+      }
+    }
+
+    /* Core Application & Ably Logic */
     function initChat() {
-      document.getElementById('user-display').innerText = `@${username}`;
+      updateUserUI();
       ably = new Ably.Realtime(ABLY_API_KEY);
 
       globalChannel = ably.channels.get('room-directory', { params: { rewind: '100' } });
@@ -868,9 +1106,10 @@
       const listContainer = document.getElementById('room-list');
       listContainer.innerHTML = '';
 
-      rooms.forEach(room => {
+      rooms.forEach((room, idx) => {
         const item = document.createElement('div');
         item.className = `room-item ${room.id === currentRoomId ? 'active' : ''}`;
+        item.style.animationDelay = `${idx * 0.04}s`;
         
         const isPrivate = room.passcode && room.passcode.length > 0;
         const isAdmin = !room.isDefault && room.adminPasscode;
@@ -1029,7 +1268,8 @@
       if (!text || !currentChannel) return;
 
       const payload = {
-        user: username,
+        user: currentUser.username,
+        avatar: currentUser.avatar || '',
         text: text,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
@@ -1040,14 +1280,17 @@
 
     function appendMessage(msg) {
       const container = document.getElementById('messages-container');
-      const isOwn = msg.user === username;
+      const isOwn = msg.user === currentUser.username;
       const msgEl = document.createElement('div');
       msgEl.className = `message ${isOwn ? 'own' : ''}`;
       
       const initial = msg.user ? msg.user.charAt(0).toUpperCase() : '?';
+      const avatarMarkup = msg.avatar 
+        ? `<img src="${msg.avatar}" alt="${msg.user}" />`
+        : initial;
 
       msgEl.innerHTML = `
-        <div class="avatar">${initial}</div>
+        <div class="avatar-container">${avatarMarkup}</div>
         <div class="message-content-wrapper">
           <div class="meta">
             <span class="author">${escapeHtml(msg.user)}</span>
