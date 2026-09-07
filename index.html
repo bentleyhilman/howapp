@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>HowApp</title>
 
   <!-- Favicon and Touch Icon -->
@@ -22,11 +22,12 @@
       padding: 0;
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     :root {
       --bg-glass: rgba(13, 16, 28, 0.75);
-      --panel-glass: rgba(18, 22, 38, 0.65);
+      --panel-glass: rgba(18, 22, 38, 0.85);
       --card-bg: rgba(255, 255, 255, 0.03);
       --card-hover: rgba(255, 255, 255, 0.07);
       --border-subtle: rgba(255, 255, 255, 0.08);
@@ -42,6 +43,7 @@
       background: #060810;
       color: var(--text-main);
       height: 100vh;
+      height: -webkit-fill-available;
       width: 100vw;
       overflow: hidden;
       display: flex;
@@ -127,6 +129,8 @@
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 10;
     }
 
     .brand-header {
@@ -269,11 +273,18 @@
       flex-direction: column;
       background: transparent;
       position: relative;
+      height: 100%;
     }
 
     .chat-header {
       padding: 24px 32px;
       border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-header-info {
       display: flex;
       flex-direction: column;
       gap: 4px;
@@ -299,6 +310,22 @@
       border-radius: 50%;
       background: var(--success);
       box-shadow: 0 0 8px var(--success);
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: #fff;
+      padding: 8px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .mobile-menu-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
     }
 
     .messages-container {
@@ -477,7 +504,7 @@
     .modal-overlay.hidden { display: none; }
 
     .modal {
-      background: rgba(18, 22, 38, 0.9);
+      background: rgba(18, 22, 38, 0.95);
       border: 1px solid var(--border-subtle);
       padding: 28px;
       border-radius: 20px;
@@ -534,6 +561,70 @@
     .avatar-preview-box { width: 60px; height: 60px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 1.5rem; color: var(--text-muted); }
     .avatar-preview-box img { width: 100%; height: 100%; object-fit: cover; }
     .hidden { display: none !important; }
+
+    /* MOBILE OVERLAY BACKDROP */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 9;
+    }
+
+    /* RESPONSIVE DESIGN BREAKPOINTS */
+    @media (max-width: 768px) {
+      body {
+        padding: 0;
+      }
+
+      #app-container {
+        border-radius: 0;
+        border: none;
+        max-height: 100%;
+        height: 100vh;
+        height: -webkit-fill-available;
+      }
+
+      .mobile-menu-btn {
+        display: flex;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 80%;
+        max-width: 300px;
+        transform: translateX(-100%);
+        box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay.active {
+        display: block;
+      }
+
+      .chat-header {
+        padding: 16px 20px;
+      }
+
+      .messages-container {
+        padding: 16px;
+      }
+
+      .message {
+        max-width: 88%;
+      }
+
+      .chat-input-container {
+        padding: 12px 16px 20px 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -545,7 +636,9 @@
 
   <!-- FLOATING APP UI -->
   <div id="app-container">
-    <div class="sidebar">
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+    
+    <div class="sidebar" id="sidebar">
       <div class="brand-header">
         <div class="brand-logo">HowApp</div>
         <div class="user-pill-header" onclick="openAccountSettings()">
@@ -575,11 +668,16 @@
 
     <div class="chat-area">
       <div class="chat-header">
-        <div class="chat-header-title" id="current-room-title"># General</div>
-        <div class="chat-header-status">
-          <span class="status-dot"></span>
-          <span>Realtime Cloud Sync Active</span>
+        <div class="chat-header-info">
+          <div class="chat-header-title" id="current-room-title"># General</div>
+          <div class="chat-header-status">
+            <span class="status-dot"></span>
+            <span>Realtime Cloud Sync Active</span>
+          </div>
         </div>
+        <button class="mobile-menu-btn" onclick="toggleSidebar(true)" title="Open Menu">
+          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
       </div>
 
       <div class="messages-container" id="messages-container"></div>
@@ -730,12 +828,23 @@
     const unreadRooms = new Set();
     const backgroundUnsubscribers = {};
 
-    // Track rooms user has entered the passcode for (persist locally)
     const joinedPrivateRooms = new Set(JSON.parse(localStorage.getItem('howapp_unlocked_rooms') || '[]'));
 
     function saveUnlockedRooms() {
       localStorage.setItem('howapp_unlocked_rooms', JSON.stringify(Array.from(joinedPrivateRooms)));
     }
+
+    window.toggleSidebar = (open) => {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      if (open) {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+      } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+      }
+    };
 
     window.handleEnter = (event, callback) => {
       if (event.key === 'Enter') {
@@ -780,9 +889,9 @@
 
     function isRoomAccessible(roomId) {
       const room = rooms.find(r => r.id === roomId);
-      if (!room) return true; // DMs or non-existent
-      if (!room.passcode) return true; // Public room
-      if (room.creator && currentUser && room.creator.toLowerCase() === currentUser.username.toLowerCase()) return true; // Creator access
+      if (!room) return true;
+      if (!room.passcode) return true;
+      if (room.creator && currentUser && room.creator.toLowerCase() === currentUser.username.toLowerCase()) return true;
       return joinedPrivateRooms.has(roomId);
     }
 
@@ -801,7 +910,6 @@
             if (change.type === "added") {
               const msgData = change.doc.data();
               if (currentUser && msgData.user !== currentUser.username && roomId !== currentRoomId) {
-                // Only mark unread & notify if user has access to the channel
                 if (isRoomAccessible(roomId)) {
                   unreadRooms.add(roomId);
                   renderRoomList();
@@ -1048,7 +1156,6 @@
 
       const isCreator = currentUser && room.creator && room.creator.toLowerCase() === currentUser.username.toLowerCase();
 
-      // Check if room needs a passcode and hasn't been unlocked yet
       if (room.passcode && !isCreator && !joinedPrivateRooms.has(roomId)) {
         pendingRoomId = roomId;
         document.getElementById('room-pass-input').value = '';
@@ -1177,6 +1284,7 @@
 
       renderRoomList();
       renderDmList();
+      toggleSidebar(false);
     }
 
     window.sendMessage = async () => {
