@@ -4,1607 +4,946 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HowApp</title>
-  <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="appleicon.png">
+
+  <!-- Favicon and Touch Icon -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <!-- Inter Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root {
-      --bg-main: #05070c;
-      --panel-bg: rgba(13, 18, 30, 0.75);
-      --panel-border: rgba(255, 255, 255, 0.08);
-      --panel-hover: rgba(255, 255, 255, 0.06);
-      
-      --accent-primary: #6366f1;
-      --accent-hover: #4f46e5;
-      --accent-cyan: #06b6d4;
-      --accent-pink: #ec4899;
-      
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-
-      --radius-lg: 24px;
-      --radius-md: 16px;
-      --radius-sm: 10px;
-
-      --spring-physics: cubic-bezier(0.34, 1.56, 0.64, 1);
-      --smooth-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --bg-dark: #0f111a;
+      --bg-panel: #161926;
+      --bg-card: #1f2336;
+      --bg-hover: #2a2f48;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+      --accent-solid: #6366f1;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border-color: #272c45;
+      --danger-color: #ef4444;
+      --success-color: #10b981;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
 
-    body {
-      background-color: var(--bg-main);
-      color: var(--text-main);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Abstract Organic Mesh Animated Gradient Background */
-    .abstract-bg {
+    /* Animated Dynamic Background Glow */
+    body::before {
+      content: '';
       position: absolute;
-      inset: -20%;
+      top: -20%;
+      left: -20%;
+      width: 140%;
+      height: 140%;
+      background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08), transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.06), transparent 40%);
       z-index: 0;
       pointer-events: none;
-      overflow: hidden;
-      filter: blur(100px);
-      opacity: 0.6;
     }
 
-    .mesh-blob {
-      position: absolute;
-      border-radius: 50%;
-      animation: floatAbstract 20s infinite alternate ease-in-out;
-    }
+    #app-container { display: flex; width: 100vw; height: 100vh; position: relative; z-index: 1; }
 
-    .blob-1 {
-      width: 600px;
-      height: 600px;
-      top: 10%;
-      left: 15%;
-      background: conic-gradient(from 0deg at 50% 50%, #6366f1, #ec4899, #06b6d4, #6366f1);
-      animation-duration: 22s;
-    }
-
-    .blob-2 {
-      width: 700px;
-      height: 700px;
-      bottom: 5%;
-      right: 10%;
-      background: radial-gradient(circle at center, #8b5cf6 0%, #3b82f6 50%, transparent 80%);
-      animation-duration: 18s;
-      animation-delay: -5s;
-    }
-
-    .blob-3 {
-      width: 500px;
-      height: 500px;
-      top: 45%;
-      left: 45%;
-      background: conic-gradient(from 180deg at 50% 50%, #f43f5e, #a855f7, #10b981);
-      animation-duration: 25s;
-      animation-delay: -10s;
-    }
-
-    @keyframes floatAbstract {
-      0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-      33% { transform: translate(60px, -80px) rotate(120deg) scale(1.15); }
-      66% { transform: translate(-50px, 50px) rotate(240deg) scale(0.9); }
-      100% { transform: translate(0, 0) rotate(360deg) scale(1); }
-    }
-
-    .app-container {
-      position: relative;
-      z-index: 10;
-      width: 95vw;
-      max-width: 1260px;
-      height: 88vh;
-      background: var(--panel-bg);
-      backdrop-filter: blur(36px);
-      -webkit-backdrop-filter: blur(36px);
-      border: 1px solid var(--panel-border);
-      border-radius: var(--radius-lg);
-      display: flex;
-      overflow: hidden;
-      box-shadow: 0 40px 90px rgba(0, 0, 0, 0.8), 0 0 60px rgba(99, 102, 241, 0.15);
-      animation: appEntrance 0.8s var(--smooth-out);
-    }
-
-    @keyframes appEntrance {
-      from { opacity: 0; transform: scale(0.94) translateY(30px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    /* Modal Architecture */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(3, 5, 12, 0.85);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-      animation: overlayFade 0.35s var(--smooth-out);
-    }
-
-    @keyframes overlayFade {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .modal {
-      background: rgba(18, 24, 38, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 34px;
-      border-radius: var(--radius-lg);
-      width: 90%;
-      max-width: 420px;
+    /* Sidebar Styling */
+    .sidebar {
+      width: 300px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(99, 102, 241, 0.2);
-      animation: modalPop 0.45s var(--spring-physics);
-    }
-
-    @keyframes modalPop {
-      from { opacity: 0; transform: scale(0.82) translateY(24px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    .modal-tabs {
-      display: flex;
-      background: rgba(10, 14, 23, 0.6);
-      padding: 4px;
-      border-radius: var(--radius-md);
-      margin-bottom: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 10px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      box-shadow: none;
-      transition: all 0.25s var(--smooth-out);
-    }
-
-    .tab-btn.active {
-      background: var(--accent-primary);
-      color: #fff;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
-    }
-
-    .modal h2 {
-      font-size: 1.45rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: #fff;
-    }
-
-    .modal label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: -6px;
-    }
-
-    input[type="text"], input[type="password"] {
-      width: 100%;
-      padding: 13px 16px;
-      border-radius: var(--radius-md);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(8, 12, 20, 0.8);
-      color: #fff;
-      font-size: 0.92rem;
-      outline: none;
-      transition: all 0.25s var(--smooth-out);
-    }
-
-    input[type="text"]:focus, input[type="password"]:focus {
-      border-color: var(--accent-primary);
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.22), 0 0 20px rgba(99, 102, 241, 0.15);
-      background: rgba(8, 12, 20, 0.95);
-    }
-
-    /* Standard Interactive Physics */
-    button {
-      padding: 13px 20px;
-      border: none;
-      border-radius: var(--radius-md);
-      background: var(--accent-primary);
-      color: white;
-      font-weight: 700;
-      font-size: 0.92rem;
-      cursor: pointer;
-      transition: all 0.25s var(--spring-physics);
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-
-    button:hover {
-      background: var(--accent-hover);
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.5);
-    }
-
-    button:active {
-      transform: translateY(1px) scale(0.97);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-    }
-
-    button.secondary {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-muted);
-      box-shadow: none;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    button.secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    button.danger {
-      background: #f43f5e;
-      box-shadow: 0 6px 20px rgba(244, 63, 94, 0.35);
-    }
-
-    button.danger:hover {
-      background: #e11d48;
-      box-shadow: 0 10px 28px rgba(244, 63, 94, 0.55);
-    }
-
-    /* Abstract Circular Send Button with Arrow */
-    .btn-abstract-send-circle {
-      width: 48px;
-      height: 48px;
-      border-radius: 50% !important;
-      padding: 0 !important;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: conic-gradient(from 0deg at 50% 50%, #6366f1, #ec4899, #06b6d4, #8b5cf6, #6366f1) !important;
-      background-size: 200% 200% !important;
-      animation: abstractSendGradient 8s ease infinite;
-      box-shadow: 0 6px 24px rgba(236, 72, 153, 0.35) !important;
-      border: none !important;
-      cursor: pointer;
       flex-shrink: 0;
     }
 
-    .btn-abstract-send-circle:hover {
-      transform: translateY(-2px) scale(1.08) !important;
-      box-shadow: 0 12px 32px rgba(236, 72, 153, 0.55) !important;
+    .brand-header {
+      padding: 20px;
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
     }
 
-    .btn-abstract-send-circle svg {
-      width: 20px;
-      height: 20px;
-      fill: #ffffff;
-      transform: translateX(1px);
+    .sidebar-section { padding: 16px 12px; flex: 1; overflow-y: auto; }
+    .section-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight: 700; margin-bottom: 10px; padding: 0 8px; display: flex; justify-content: space-between; align-items: center; }
+
+    .room-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+      margin-bottom: 4px;
     }
 
-    @keyframes abstractSendGradient {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    .room-item:hover { background: var(--bg-hover); color: var(--text-main); }
+    .room-item.active { background: var(--bg-hover); color: #fff; font-weight: 600; border-left: 3px solid var(--accent-solid); }
+
+    .room-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+    .room-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .badge {
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
     }
+    .badge.public { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+    .badge.private { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
+    .badge.dm { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .badge.unread { background: var(--accent-solid); color: #fff; }
+
+    /* User Profile Bar at Sidebar Bottom */
+    .user-badge-bar {
+      padding: 14px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .user-profile-info { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .avatar-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #fff;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Main Chat Workspace */
+    .chat-area { flex: 1; display: flex; flex-direction: column; background: rgba(15, 17, 26, 0.85); }
+    .chat-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-panel);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .messages-container { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+
+    .message { display: flex; gap: 12px; max-width: 80%; }
+    .message.own { align-self: flex-end; flex-direction: row-reverse; }
+
+    .message .avatar-container { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; font-weight: 700; overflow: hidden; flex-shrink: 0; }
+    .message .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+
+    .message-content-wrapper { display: flex; flex-direction: column; gap: 4px; }
+    .message.own .message-content-wrapper { align-items: flex-end; }
+
+    .message .meta { font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 8px; }
+    .message .author { font-weight: 600; color: var(--text-main); }
+
+    .message-bubble {
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .message.own .message-bubble {
+      background: var(--accent-gradient);
+      border: none;
+      color: #fff;
+    }
+
+    .chat-input-container {
+      padding: 20px;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 12px;
+    }
+
+    input[type="text"], input[type="password"] {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 12px 16px;
+      border-radius: 8px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent-solid); }
+
+    .chat-input-container input { flex: 1; }
+
+    button {
+      background: var(--accent-gradient);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.9; }
 
     .icon-btn {
       background: transparent;
       padding: 6px;
-      border-radius: var(--radius-sm);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      border: none;
-      box-shadow: none;
-      color: var(--text-muted);
-      transition: all 0.25s var(--spring-physics);
-    }
-
-    .icon-btn:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
-      transform: scale(1.15) rotate(5deg);
-      box-shadow: none;
-    }
-
-    .icon-btn svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
-    }
-
-    /* Sidebar Interface */
-    .sidebar {
-      width: 320px;
-      background: rgba(8, 12, 20, 0.5);
-      border-right: 1px solid var(--panel-border);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .sidebar-header {
-      padding: 22px 20px;
-      border-bottom: 1px solid var(--panel-border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .brand-title {
-      font-weight: 800;
-      font-size: 1.35rem;
-      letter-spacing: -0.6px;
-      color: #fff;
-    }
-
-    .user-profile-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.04);
-      padding: 5px 10px;
-      border-radius: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      cursor: pointer;
-      transition: all 0.25s var(--smooth-out);
-    }
-
-    .user-profile-badge:hover {
-      background: rgba(255, 255, 255, 0.09);
-      border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
-    }
-
-    .profile-avatar-mini {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: var(--accent-primary);
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.72rem;
-      font-weight: 800;
-      color: #fff;
-      overflow: hidden;
-    }
-
-    .profile-avatar-mini img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .user-badge-name {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--text-main);
-    }
-
-    .section-header {
-      padding: 16px 20px 8px;
-      font-size: 0.7rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      color: var(--text-dim);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .section-add-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 1.1rem;
-      line-height: 1;
-      padding: 2px 6px;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-      box-shadow: none;
-    }
-
-    .section-add-btn:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.1);
-      transform: scale(1.2);
-    }
-
-    .sidebar-scrollable {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .room-item {
-      padding: 10px 14px;
-      border-radius: var(--radius-md);
-      background: transparent;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: all 0.25s var(--smooth-out);
-      border: 1px solid transparent;
-      animation: itemSlideIn 0.35s var(--smooth-out) backwards;
-    }
-
-    @keyframes itemSlideIn {
-      from { opacity: 0; transform: translateX(-12px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
-    .room-item:hover {
-      background: var(--panel-hover);
-      border-color: rgba(255, 255, 255, 0.05);
-      transform: translateX(3px);
-    }
-
-    .room-item.active {
-      background: rgba(99, 102, 241, 0.16);
-      border-color: rgba(99, 102, 241, 0.35);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    .room-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      overflow: hidden;
-    }
-
-    .room-icon {
-      font-size: 1.05rem;
       color: var(--text-muted);
     }
+    .icon-btn:hover { background: var(--bg-hover); color: var(--text-main); }
+    .icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
 
-    .room-item.active .room-icon {
-      color: var(--accent-primary);
-    }
-
-    .room-name {
-      font-weight: 600;
-      font-size: 0.88rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--text-main);
-    }
-
-    .badge {
-      font-size: 0.62rem;
-      font-weight: 800;
-      padding: 3px 7px;
-      border-radius: 20px;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      flex-shrink: 0;
-    }
-
-    .badge.public {
-      background: rgba(6, 182, 212, 0.12);
-      color: var(--accent-cyan);
-      border: 1px solid rgba(6, 182, 212, 0.25);
-    }
-
-    .badge.private {
-      background: rgba(244, 63, 94, 0.12);
-      color: #f43f5e;
-      border: 1px solid rgba(244, 63, 94, 0.25);
-    }
-
-    .badge.dm {
-      background: rgba(236, 72, 153, 0.12);
-      color: #ec4899;
-      border: 1px solid rgba(236, 72, 153, 0.25);
-    }
-
-    /* Unread Message Pill Indicator */
-    .badge.unread {
-      background: var(--accent-pink);
-      color: #ffffff;
-      border: none;
-      box-shadow: 0 0 10px rgba(236, 72, 153, 0.6);
-      animation: unreadPulse 2s infinite ease-in-out;
-    }
-
-    @keyframes unreadPulse {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.08); opacity: 0.85; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    /* Main Chat Workspace */
-    .chat-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: rgba(10, 14, 24, 0.4);
-    }
-
-    .chat-header {
-      padding: 20px 26px;
-      border-bottom: 1px solid var(--panel-border);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: rgba(8, 12, 20, 0.3);
-    }
-
-    .chat-header-title {
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: #fff;
-      letter-spacing: -0.3px;
-    }
-
-    .chat-header-subtitle {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .online-indicator {
-      width: 8px;
-      height: 8px;
-      background-color: #10b981;
-      border-radius: 50%;
-      box-shadow: 0 0 10px #10b981;
-    }
-
-    .messages-container {
-      flex: 1;
-      padding: 26px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      scroll-behavior: smooth;
-    }
-
-    .messages-container::-webkit-scrollbar,
-    .sidebar-scrollable::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .messages-container::-webkit-scrollbar-thumb,
-    .sidebar-scrollable::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 10px;
-    }
-
-    .message {
-      max-width: 65%;
-      display: flex;
-      gap: 10px;
-      animation: messagePopIn 0.35s var(--spring-physics);
-    }
-
-    @keyframes messagePopIn {
-      from { opacity: 0; transform: translateY(12px) scale(0.95); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    .message.own {
-      align-self: flex-end;
-      flex-direction: row-reverse;
-    }
-
-    .avatar-container {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      overflow: hidden;
-      flex-shrink: 0;
-      background: var(--accent-primary);
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 800;
-      font-size: 0.82rem;
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 100;
     }
+    .modal-overlay.hidden { display: none; }
 
-    .avatar-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .message-content-wrapper {
+    .modal {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      padding: 28px;
+      border-radius: 16px;
+      width: 400px;
+      max-width: 90vw;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     }
 
-    .message.own .message-content-wrapper {
-      align-items: flex-end;
-    }
+    .modal-header { font-size: 1.2rem; font-weight: 700; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+    .btn-secondary { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color); }
 
-    .message .meta {
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      display: flex;
-      gap: 8px;
-      padding: 0 4px;
-    }
+    /* Auth Tabs */
+    .auth-tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
+    .auth-tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; }
+    .auth-tab.active { color: var(--text-main); font-weight: 600; border-bottom-color: var(--accent-solid); }
 
-    .message .meta .author {
-      font-weight: 700;
-      color: var(--text-muted);
-    }
-
-    .message-bubble {
-      padding: 9px 15px;
-      border-radius: 18px;
-      background: rgba(22, 30, 48, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      color: var(--text-main);
-      font-size: 0.88rem;
-      line-height: 1.45;
-      word-break: break-word;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-      transition: transform 0.2s var(--smooth-out);
-    }
-
-    .message-bubble:hover {
-      transform: scale(1.01);
-    }
-
-    .message.own .message-bubble {
-      background: var(--accent-primary);
-      color: #ffffff;
-      border: none;
-      box-shadow: 0 5px 18px rgba(99, 102, 241, 0.35);
-    }
-
-    /* Input Area */
-    .input-area {
-      padding: 18px 26px;
-      background: rgba(8, 12, 20, 0.4);
-      border-top: 1px solid var(--panel-border);
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .input-area input {
-      flex: 1;
-      padding: 14px 20px;
-      border-radius: 30px;
-      background: rgba(14, 20, 34, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 0.92rem;
-    }
-
-    /* Profile Avatar Settings Preview */
-    .avatar-preview-box {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: rgba(10, 14, 24, 0.8);
-      border: 2px dashed rgba(255, 255, 255, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      overflow: hidden;
-      margin: 0 auto;
-      transition: all 0.25s var(--smooth-out);
-      position: relative;
-    }
-
-    .avatar-preview-box:hover {
-      border-color: var(--accent-primary);
-      transform: scale(1.05);
-    }
-
-    .avatar-preview-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    @media (max-width: 768px) {
-      .app-container {
-        flex-direction: column;
-        height: 100vh;
-        width: 100vw;
-        border-radius: 0;
-        border: none;
-      }
-
-      .sidebar {
-        width: 100%;
-        height: 42%;
-      }
-
-      .chat-area {
-        height: 58%;
-      }
-
-      .message {
-        max-width: 85%;
-      }
-    }
+    /* Avatar Upload Preview */
+    .avatar-preview-wrapper { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+    .avatar-preview-box { width: 80px; height: 80px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 2rem; color: var(--text-muted); }
+    .avatar-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-  <div class="abstract-bg">
-    <div class="mesh-blob blob-1"></div>
-    <div class="mesh-blob blob-2"></div>
-    <div class="mesh-blob blob-3"></div>
-  </div>
-
-  <div id="auth-modal" class="overlay">
-    <div class="modal">
-      <h2>Welcome to HowApp</h2>
-      <div class="modal-tabs">
-        <button id="tab-login-btn" class="tab-btn active" onclick="switchAuthTab('login')">Sign In</button>
-        <button id="tab-signup-btn" class="tab-btn" onclick="switchAuthTab('signup')">Create Account</button>
-      </div>
-
-      <div id="login-view" style="display: flex; flex-direction: column; gap: 12px;">
-        <label>Username</label>
-        <input type="text" id="login-username" placeholder="Enter your username" onkeydown="handleEnter(event, processLogin)" />
-        <label>Password</label>
-        <input type="password" id="login-password" placeholder="••••••••" onkeydown="handleEnter(event, processLogin)" />
-        <button onclick="processLogin()" style="margin-top: 6px;">Sign In →</button>
-      </div>
-
-      <div id="signup-view" class="hidden" style="display: flex; flex-direction: column; gap: 12px;">
-        <label>New Username</label>
-        <input type="text" id="signup-username" placeholder="Choose a username" onkeydown="handleEnter(event, processSignup)" />
-        <label>New Password</label>
-        <input type="password" id="signup-password" placeholder="••••••••" onkeydown="handleEnter(event, processSignup)" />
-        <button onclick="processSignup()" style="margin-top: 6px;">Create Account →</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="account-settings-modal" class="overlay hidden">
-    <div class="modal">
-      <h2>Account Settings</h2>
-      <p style="font-size: 0.82rem; color: var(--text-muted); text-align: center;">Customize your profile or change your account details.</p>
-
-      <div class="avatar-preview-box" onclick="document.getElementById('avatar-file-input').click()" title="Click to upload picture">
-        <div id="avatar-preview-placeholder" style="font-size:0.72rem; color: var(--text-muted); text-align:center;">Upload<br>Photo</div>
-        <img id="avatar-preview-img" class="hidden" alt="Profile" />
-      </div>
-      <input type="file" id="avatar-file-input" accept="image/*" class="hidden" onchange="handleAvatarSelect(event)" />
-
-      <label>Display Username</label>
-      <input type="text" id="settings-username" placeholder="Username" disabled style="opacity: 0.6; cursor: not-allowed;" />
-
-      <label>New Password (Optional)</label>
-      <input type="password" id="settings-new-password" placeholder="Leave blank to keep current password" onkeydown="handleEnter(event, saveAccountSettings)" />
-
-      <div style="display:flex; flex-direction:column; gap: 8px; margin-top: 6px;">
-        <button onclick="saveAccountSettings()">Save Settings</button>
-        <button onclick="processLogout()" class="danger">Log Out</button>
-        <button onclick="closeModal('account-settings-modal')" class="secondary">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="create-dm-modal" class="overlay hidden">
-    <div class="modal">
-      <h2>Start Direct Message</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted);">Enter the exact username of the account you want to chat with.</p>
-      <label>Target Username</label>
-      <input type="text" id="dm-target-username" placeholder="e.g. Alex" onkeydown="handleEnter(event, createDM)" />
-      <div style="display:flex; gap: 10px; margin-top: 6px;">
-        <button onclick="createDM()" style="flex:1;">Start Chat</button>
-        <button onclick="closeModal('create-dm-modal')" class="secondary">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="passcode-modal" class="overlay hidden">
-    <div class="modal">
-      <h2>Protected Channel</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted);">Enter passcode to access this channel.</p>
-      <label>Room Passcode</label>
-      <input type="password" id="room-pass-input" placeholder="••••••••" onkeydown="handleEnter(event, verifyPasscode)" />
-      <div style="display:flex; gap: 10px; margin-top: 6px;">
-        <button onclick="verifyPasscode()" style="flex:1;">Enter Room</button>
-        <button onclick="closeModal('passcode-modal')" class="secondary">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="create-room-modal" class="overlay hidden">
-    <div class="modal">
-      <h2>Create Channel</h2>
-      <label>Channel Name</label>
-      <input type="text" id="new-room-name" placeholder="e.g. Lounge" onkeydown="handleEnter(event, createRoom)" />
-      <label>Access Passcode (Optional)</label>
-      <input type="password" id="new-room-pass" placeholder="Leave empty for public" onkeydown="handleEnter(event, createRoom)" />
-      <div style="display:flex; gap: 10px; margin-top: 8px;">
-        <button onclick="createRoom()" style="flex:1;">Create Channel</button>
-        <button onclick="closeModal('create-room-modal')" class="secondary">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="creator-settings-modal" class="overlay hidden">
-    <div class="modal">
-      <h2>Channel Settings</h2>
-      <p style="font-size: 0.82rem; color: var(--text-muted);">You are the owner of this channel. Update details or delete it.</p>
-      <label>Channel Name</label>
-      <input type="text" id="edit-room-name" placeholder="Channel Name" onkeydown="handleEnter(event, saveRoomEdits)" />
-      <label>Access Passcode (Optional)</label>
-      <input type="password" id="edit-room-pass" placeholder="Leave blank for public" onkeydown="handleEnter(event, saveRoomEdits)" />
-      <div style="display:flex; flex-direction:column; gap: 8px; margin-top: 8px;">
-        <button onclick="saveRoomEdits()">Save Changes</button>
-        <button onclick="deleteRoom()" class="danger">Delete Channel</button>
-        <button onclick="closeModal('creator-settings-modal')" class="secondary">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="app-container">
-    
+  <div id="app-container">
+    <!-- Navigation Sidebar -->
     <div class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand">
-          <div class="brand-title">HowApp</div>
-          <div class="user-profile-badge" onclick="openAccountSettings()" title="Account Settings">
-            <div id="user-badge-avatar" class="profile-avatar-mini">?</div>
-            <span id="user-badge-name" class="user-badge-name">@user</span>
-          </div>
-        </div>
+      <div class="brand-header">
+        <span>HowApp</span>
       </div>
 
-      <div class="sidebar-scrollable">
-        <div class="section-header">
+      <div class="sidebar-section">
+        <div class="section-title">
           <span>Channels</span>
-          <button class="section-add-btn" onclick="openModal('create-room-modal')" title="Create Channel">+</button>
-        </div>
-        <div id="room-list" style="display:flex; flex-direction:column; gap:4px;"></div>
-
-        <div class="section-header" style="margin-top: 14px;">
-          <span>Direct Messages</span>
-          <button class="section-add-btn" onclick="openModal('create-dm-modal')" title="New DM">+</button>
-        </div>
-        <div id="dm-list" style="display:flex; flex-direction:column; gap:4px;"></div>
-      </div>
-    </div>
-
-    <div class="chat-area">
-      <div class="chat-header">
-        <div style="flex: 1;">
-          <div class="chat-header-title" id="current-room-title"># General</div>
-          <div class="chat-header-subtitle">
-            <span class="online-indicator"></span> Realtime Cloud Sync Active
-          </div>
-        </div>
-        <div id="room-settings-btn-container" class="hidden">
-          <button class="icon-btn" onclick="openCreatorSettings()" title="Channel Settings">
-            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <button class="icon-btn" onclick="openModal('create-room-modal')" title="Create Channel">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
           </button>
         </div>
+        <div id="room-list"></div>
+
+        <div class="section-title" style="margin-top: 24px;">
+          <span>Direct Messages</span>
+          <button class="icon-btn" onclick="openModal('create-dm-modal')" title="New DM">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </button>
+        </div>
+        <div id="dm-list"></div>
       </div>
 
-      <div class="messages-container" id="messages-container"></div>
-
-      <div class="input-area">
-        <input type="text" id="message-input" placeholder="Message channel..." onkeydown="handleEnter(event, sendMessage)" />
-        <button class="btn-abstract-send-circle" onclick="sendMessage()" title="Send Message">
-          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      <!-- Account Badge -->
+      <div class="user-badge-bar">
+        <div class="user-profile-info" onclick="openAccountSettings()">
+          <div class="avatar-circle" id="user-badge-avatar">?</div>
+          <span id="user-badge-name" style="font-weight: 600; font-size: 0.9rem;">@guest</span>
+        </div>
+        <button class="icon-btn" onclick="openAccountSettings()" title="Settings">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
         </button>
       </div>
     </div>
 
+    <!-- Main Workspace -->
+    <div class="chat-area">
+      <div class="chat-header">
+        <span id="current-room-title"># general</span>
+      </div>
+
+      <div class="messages-container" id="messages-container"></div>
+
+      <div class="chat-input-container">
+        <input type="text" id="message-input" placeholder="Type a message..." onkeydown="handleEnter(event, sendMessage)" />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
   </div>
 
-  <script>
-  const ABLY_API_KEY = 'LDAdyw.d365Vw:DgFTHDyC7dDCOglWbLR7ETmDhw5eJudFqcpM0V1XGyg';
+  <!-- AUTH MODAL -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="auth-tabs">
+        <div id="tab-login-btn" class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+        <div id="tab-signup-btn" class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</div>
+      </div>
 
-  let ably, globalAccountsChannel, roomDirChannel, dmDirChannel;
-  let currentActiveChannel = null; // Track active channel subscription
-  let activeMsgSubscriber = null; // Track current live message callback
-  const roomChannelsMap = {}; // Tracks active background listeners for unread states
-  const unreadRooms = new Set(); // Tracks room IDs with unread messages
+      <div id="login-view">
+        <input type="text" id="login-username" placeholder="Username" style="width:100%; margin-bottom:12px;" onkeydown="handleEnter(event, processLogin)">
+        <input type="password" id="login-password" placeholder="Password" style="width:100%; margin-bottom:16px;" onkeydown="handleEnter(event, processLogin)">
+        <button style="width:100%" onclick="processLogin()">Login</button>
+      </div>
 
-  let accountsDb = {};
-  let rooms = [
-    { id: 'global-general', name: 'General', passcode: '', creator: 'system', isDefault: true }
-  ];
-  let dms = [];
+      <div id="signup-view" class="hidden">
+        <input type="text" id="signup-username" placeholder="Choose Username" style="width:100%; margin-bottom:12px;" onkeydown="handleEnter(event, processSignup)">
+        <input type="password" id="signup-password" placeholder="Choose Password" style="width:100%; margin-bottom:16px;" onkeydown="handleEnter(event, processSignup)">
+        <button style="width:100%" onclick="processSignup()">Create Account</button>
+      </div>
+    </div>
+  </div>
 
-  let currentUser = null;
-  let currentRoomId = null;
-  let pendingRoomId = null;
-  let targetCreatorRoomId = null;
-  let tempAvatarBase64 = null;
+  <!-- CREATE ROOM MODAL -->
+  <div id="create-room-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">Create Channel</div>
+      <input type="text" id="new-room-name" placeholder="Channel Name" onkeydown="handleEnter(event, createRoom)">
+      <input type="password" id="new-room-pass" placeholder="Passcode (Optional)" onkeydown="handleEnter(event, createRoom)">
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('create-room-modal')">Cancel</button>
+        <button onclick="createRoom()">Create</button>
+      </div>
+    </div>
+  </div>
 
-  window.onload = function() {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
+  <!-- PASSCODE ENTER MODAL -->
+  <div id="passcode-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">Protected Channel</div>
+      <p style="font-size:0.85rem; color:var(--text-muted);">Enter the passcode to access this room:</p>
+      <input type="password" id="room-pass-input" placeholder="Passcode" onkeydown="handleEnter(event, verifyPasscode)">
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('passcode-modal')">Cancel</button>
+        <button onclick="verifyPasscode()">Join</button>
+      </div>
+    </div>
+  </div>
 
-    ably = new Ably.Realtime(ABLY_API_KEY);
-    
-    syncGlobalAccounts(() => {
-      syncRoomDirectory();
-      syncDmDirectory();
+  <!-- CREATE DM MODAL -->
+  <div id="create-dm-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">Start Direct Message</div>
+      <input type="text" id="dm-target-username" placeholder="Username" onkeydown="handleEnter(event, createDM)">
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('create-dm-modal')">Cancel</button>
+        <button onclick="createDM()">Start DM</button>
+      </div>
+    </div>
+  </div>
 
-      const savedSession = localStorage.getItem('howapp_session_user');
-      if (savedSession && accountsDb[savedSession.toLowerCase()]) {
-        currentUser = {
-          username: savedSession,
-          avatar: accountsDb[savedSession.toLowerCase()].avatar || ''
-        };
-        document.getElementById('auth-modal').classList.add('hidden');
-        initChatWorkspace();
+  <!-- ACCOUNT SETTINGS MODAL -->
+  <div id="account-settings-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">Account Settings</div>
+      <label style="font-size: 0.8rem; color: var(--text-muted);">Username</label>
+      <input type="text" id="settings-username" disabled style="opacity: 0.6;">
+
+      <label style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">New Password (leave blank to keep current)</label>
+      <input type="password" id="settings-new-password" placeholder="New Password">
+
+      <label style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">Profile Picture</label>
+      <div class="avatar-preview-wrapper">
+        <div class="avatar-preview-box">
+          <img id="avatar-preview-img" class="hidden" />
+          <span id="avatar-preview-placeholder">?</span>
+        </div>
+        <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarSelect(event)" style="font-size: 0.8rem;">
+      </div>
+
+      <div class="modal-actions" style="margin-top: 16px;">
+        <button class="btn-secondary" onclick="processLogout()" style="background: rgba(239, 68, 68, 0.2); color: var(--danger-color); border: none; margin-right: auto;">Log Out</button>
+        <button class="btn-secondary" onclick="closeModal('account-settings-modal')">Cancel</button>
+        <button onclick="saveAccountSettings()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATOR ROOM SETTINGS MODAL -->
+  <div id="creator-settings-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">Manage Channel</div>
+      <input type="text" id="edit-room-name" placeholder="Channel Name">
+      <input type="password" id="edit-room-pass" placeholder="Passcode (leave blank for Public)">
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="deleteRoom()" style="background: rgba(239, 68, 68, 0.2); color: var(--danger-color); border: none; margin-right: auto;">Delete</button>
+        <button class="btn-secondary" onclick="closeModal('creator-settings-modal')">Cancel</button>
+        <button onclick="saveRoomEdits()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Modular SDK Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, 
+      onSnapshot, addDoc, query, orderBy, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+   const firebaseConfig = {
+  apiKey: "AIzaSyAj5N-Y00BUJOKUaPv9zhi3AxGoV9Xgl2Q",
+  authDomain: "realhowapp.firebaseapp.com",
+  projectId: "realhowapp",
+  storageBucket: "realhowapp.firebasestorage.app",
+  messagingSenderId: "842591375022",
+  appId: "1:842591375022:web:2635d947ba948d2874673f",
+  measurementId: "G-9Z5DPNQXV2"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Global State
+    let currentUser = null;
+    let currentRoomId = null;
+    let pendingRoomId = null;
+    let targetCreatorRoomId = null;
+    let tempAvatarBase64 = null;
+    let activeMessageUnsubscribe = null;
+
+    let accountsDb = {};
+    let rooms = [];
+    let dms = [];
+    const unreadRooms = new Set();
+
+    // DOM Utility
+    window.handleEnter = (event, callback) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        callback();
       }
-    });
-  };
+    };
 
-  function handleEnter(event, callback) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      callback();
-    }
-  }
+    // Global Initializer
+    window.addEventListener('load', () => {
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.permission !== "denied" && Notification.requestPermission();
+      }
 
-  /* Global Cloud Account Sync */
-  function syncGlobalAccounts(onComplete) {
-    globalAccountsChannel = ably.channels.get('app-global-accounts', { params: { rewind: '100' } });
-
-    globalAccountsChannel.history({ limit: 100 }, (err, resultPage) => {
-      if (!err && resultPage.items) {
-        resultPage.items.reverse().forEach(msg => {
-          applyAccountEvent(msg.data);
+      // Live Listener for Users Collection
+      onSnapshot(collection(db, "accounts"), (snapshot) => {
+        snapshot.forEach((docSnap) => {
+          accountsDb[docSnap.id] = docSnap.data();
         });
-      }
+        
+        if (currentUser && accountsDb[currentUser.username.toLowerCase()]) {
+          currentUser.avatar = accountsDb[currentUser.username.toLowerCase()].avatar || '';
+          updateUserUI();
+        }
 
-      globalAccountsChannel.subscribe(msg => {
-        applyAccountEvent(msg.data);
+        // Auto Login Session check
+        const savedSession = localStorage.getItem('howapp_session_user');
+        if (savedSession && accountsDb[savedSession.toLowerCase()] && !currentUser) {
+          currentUser = {
+            username: savedSession,
+            avatar: accountsDb[savedSession.toLowerCase()].avatar || ''
+          };
+          document.getElementById('auth-modal').classList.add('hidden');
+          initWorkspace();
+        }
+      });
+    });
+
+    function initWorkspace() {
+      updateUserUI();
+      listenToRooms();
+      listenToDMs();
+      selectRoom('global-general');
+    }
+
+    /* Auth Operations */
+    window.switchAuthTab = (tab) => {
+      document.getElementById('login-view').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('signup-view').classList.toggle('hidden', tab !== 'signup');
+      document.getElementById('tab-login-btn').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-signup-btn').classList.toggle('active', tab === 'signup');
+    };
+
+    window.processSignup = async () => {
+      const u = document.getElementById('signup-username').value.trim();
+      const p = document.getElementById('signup-password').value.trim();
+
+      if (!u || !p) return alert('Please enter both username and password.');
+      if (accountsDb[u.toLowerCase()]) return alert('Username already registered!');
+
+      await setDoc(doc(db, "accounts", u.toLowerCase()), {
+        username: u,
+        password: p,
+        avatar: ''
       });
 
-      if (onComplete) onComplete();
-    });
-  }
+      loginUser({ username: u, avatar: '' });
+    };
 
-  function applyAccountEvent(data) {
-    if (!data || !data.username) return;
-    const key = data.username.toLowerCase();
+    window.processLogin = () => {
+      const u = document.getElementById('login-username').value.trim();
+      const p = document.getElementById('login-password').value.trim();
 
-    if (data.action === 'register' || data.action === 'update') {
-      accountsDb[key] = {
-        username: data.username,
-        password: data.password,
-        avatar: data.avatar || ''
-      };
-      if (currentUser && currentUser.username.toLowerCase() === key) {
-        currentUser.avatar = data.avatar || '';
-        updateUserUI();
+      const acc = accountsDb[u.toLowerCase()];
+      if (!acc || acc.password !== p) return alert('Invalid login credentials.');
+
+      loginUser({ username: acc.username, avatar: acc.avatar || '' });
+    };
+
+    function loginUser(userObj) {
+      currentUser = { username: userObj.username, avatar: userObj.avatar || '' };
+      localStorage.setItem('howapp_session_user', currentUser.username);
+      document.getElementById('auth-modal').classList.add('hidden');
+      initWorkspace();
+    }
+
+    window.processLogout = () => {
+      localStorage.removeItem('howapp_session_user');
+      window.location.reload();
+    };
+
+    /* User UI Updates */
+    function updateUserUI() {
+      document.getElementById('user-badge-name').innerText = `@${currentUser.username}`;
+      const badgeAvatar = document.getElementById('user-badge-avatar');
+
+      if (currentUser.avatar) {
+        badgeAvatar.innerHTML = `<img src="${currentUser.avatar}" />`;
+      } else {
+        badgeAvatar.innerText = currentUser.username.charAt(0).toUpperCase();
       }
     }
-  }
 
-  /* Auth Tab switching */
-  function switchAuthTab(tab) {
-    const loginView = document.getElementById('login-view');
-    const signupView = document.getElementById('signup-view');
-    const tabLoginBtn = document.getElementById('tab-login-btn');
-    const tabSignupBtn = document.getElementById('tab-signup-btn');
+    /* Account Settings */
+    window.openAccountSettings = () => {
+      document.getElementById('settings-username').value = currentUser.username;
+      document.getElementById('settings-new-password').value = '';
 
-    if (tab === 'login') {
-      loginView.classList.remove('hidden');
-      signupView.classList.add('hidden');
-      tabLoginBtn.classList.add('active');
-      tabSignupBtn.classList.remove('active');
-    } else {
-      signupView.classList.remove('hidden');
-      loginView.classList.add('hidden');
-      tabSignupBtn.classList.add('active');
-      tabLoginBtn.classList.remove('active');
-    }
-  }
+      const acc = accountsDb[currentUser.username.toLowerCase()];
+      tempAvatarBase64 = acc ? acc.avatar : (currentUser.avatar || null);
 
-  function processSignup() {
-    const u = document.getElementById('signup-username').value.trim();
-    const p = document.getElementById('signup-password').value.trim();
-
-    if (!u || !p) {
-      alert('Please fill in all fields.');
-      return;
-    }
-
-    if (accountsDb[u.toLowerCase()]) {
-      alert('Username is already registered globally!');
-      return;
-    }
-
-    const payload = { action: 'register', username: u, password: p, avatar: '' };
-    globalAccountsChannel.publish('account-evt', payload);
-
-    loginUser({ username: u, avatar: '' });
-  }
-
-  function processLogin() {
-    const u = document.getElementById('login-username').value.trim();
-    const p = document.getElementById('login-password').value.trim();
-
-    const acc = accountsDb[u.toLowerCase()];
-
-    if (!acc || acc.password !== p) {
-      alert('Invalid username or password.');
-      return;
-    }
-
-    loginUser({ username: acc.username, avatar: acc.avatar || '' });
-  }
-
-  function loginUser(userObj) {
-    currentUser = { username: userObj.username, avatar: userObj.avatar || '' };
-    localStorage.setItem('howapp_session_user', currentUser.username);
-    document.getElementById('auth-modal').classList.add('hidden');
-    initChatWorkspace();
-  }
-
-  function processLogout() {
-    localStorage.removeItem('howapp_session_user');
-    window.location.reload();
-  }
-
-  /* Account Settings */
-  function openAccountSettings() {
-    document.getElementById('settings-username').value = currentUser.username;
-    document.getElementById('settings-new-password').value = '';
-    
-    const acc = accountsDb[currentUser.username.toLowerCase()];
-    tempAvatarBase64 = acc ? acc.avatar : (currentUser.avatar || null);
-    
-    const previewImg = document.getElementById('avatar-preview-img');
-    const placeholder = document.getElementById('avatar-preview-placeholder');
-
-    if (tempAvatarBase64) {
-      previewImg.src = tempAvatarBase64;
-      previewImg.classList.remove('hidden');
-      placeholder.classList.add('hidden');
-    } else {
-      previewImg.classList.add('hidden');
-      placeholder.classList.remove('hidden');
-    }
-
-    openModal('account-settings-modal');
-  }
-
-  function handleAvatarSelect(evt) {
-    const file = evt.target.files[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Please select an image smaller than 2MB.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      tempAvatarBase64 = e.target.result;
       const previewImg = document.getElementById('avatar-preview-img');
       const placeholder = document.getElementById('avatar-preview-placeholder');
-      previewImg.src = tempAvatarBase64;
-      previewImg.classList.remove('hidden');
-      placeholder.classList.add('hidden');
-    };
-    reader.readAsDataURL(file);
-  }
 
-  function saveAccountSettings() {
-    const newPass = document.getElementById('settings-new-password').value.trim();
-    const acc = accountsDb[currentUser.username.toLowerCase()];
+      if (tempAvatarBase64) {
+        previewImg.src = tempAvatarBase64;
+        previewImg.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+      } else {
+        previewImg.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+      }
 
-    const payload = {
-      action: 'update',
-      username: currentUser.username,
-      password: newPass !== '' ? newPass : (acc ? acc.password : ''),
-      avatar: tempAvatarBase64 || ''
+      openModal('account-settings-modal');
     };
 
-    globalAccountsChannel.publish('account-evt', payload);
-    currentUser.avatar = tempAvatarBase64 || '';
-    updateUserUI();
-    closeModal('account-settings-modal');
-  }
+    window.handleAvatarSelect = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-  function updateUserUI() {
-    if (!currentUser) return;
-    document.getElementById('user-badge-name').textContent = '@' + currentUser.username;
-    const badgeAvatar = document.getElementById('user-badge-avatar');
-    
-    if (currentUser.avatar) {
-      badgeAvatar.innerHTML = `<img src="${currentUser.avatar}" alt="Avatar" />`;
-    } else {
-      badgeAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
-    }
-  }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = 80;
+          canvas.height = 80;
+          ctx.drawImage(img, 0, 0, 80, 80);
+          tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
 
-  /* Room Directory Sync */
-  function syncRoomDirectory() {
-    roomDirChannel = ably.channels.get('app-room-directory', { params: { rewind: '100' } });
+          const previewImg = document.getElementById('avatar-preview-img');
+          previewImg.src = tempAvatarBase64;
+          previewImg.classList.remove('hidden');
+          document.getElementById('avatar-preview-placeholder').classList.add('hidden');
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
 
-    roomDirChannel.history({ limit: 100 }, (err, resultPage) => {
-      if (!err && resultPage.items) {
-        resultPage.items.reverse().forEach(msg => {
-          applyRoomEvent(msg.data);
-        });
-      }
+    window.saveAccountSettings = async () => {
+      const acc = accountsDb[currentUser.username.toLowerCase()];
+      const newPasswordInput = document.getElementById('settings-new-password').value.trim();
+      const updatedPassword = newPasswordInput.length > 0 ? newPasswordInput : (acc ? acc.password : '');
+      const updatedAvatar = tempAvatarBase64 || '';
 
-      roomDirChannel.subscribe(msg => {
-        applyRoomEvent(msg.data);
+      await updateDoc(doc(db, "accounts", currentUser.username.toLowerCase()), {
+        password: updatedPassword,
+        avatar: updatedAvatar
       });
-    });
-  }
 
-  function applyRoomEvent(data) {
-    if (!data || !data.id) return;
+      currentUser.avatar = updatedAvatar;
+      updateUserUI();
+      closeModal('account-settings-modal');
+    };
 
-    if (data.action === 'create') {
-      if (!rooms.some(r => r.id === data.id)) {
-        rooms.push({ id: data.id, name: data.name, passcode: data.passcode || '', creator: data.creator });
-        setupRoomListener(data.id);
-      }
-    } else if (data.action === 'update') {
-      const idx = rooms.findIndex(r => r.id === data.id);
-      if (idx !== -1) {
-        rooms[idx].name = data.name;
-        rooms[idx].passcode = data.passcode || '';
-      }
-    } else if (data.action === 'delete') {
-      rooms = rooms.filter(r => r.id !== data.id);
-      if (currentRoomId === data.id) {
-        switchRoom('global-general');
-      }
-    }
+    /* Realtime Rooms Listener */
+    function listenToRooms() {
+      onSnapshot(collection(db, "rooms"), (snapshot) => {
+        rooms = [];
+        let hasGeneral = false;
 
-    renderSidebar();
-  }
-
-  /* DM Directory Sync */
-  function syncDmDirectory() {
-    dmDirChannel = ably.channels.get('app-dm-directory', { params: { rewind: '100' } });
-
-    dmDirChannel.history({ limit: 100 }, (err, resultPage) => {
-      if (!err && resultPage.items) {
-        resultPage.items.reverse().forEach(msg => {
-          applyDmEvent(msg.data);
+        snapshot.forEach((docSnap) => {
+          const r = { id: docSnap.id, ...docSnap.data() };
+          rooms.push(r);
+          if (r.id === 'global-general') hasGeneral = true;
         });
-      }
 
-      dmDirChannel.subscribe(msg => {
-        applyDmEvent(msg.data);
-      });
-    });
-  }
-
-  function applyDmEvent(data) {
-    if (!data || !data.id) return;
-
-    if (data.action === 'create') {
-      if (!dms.some(d => d.id === data.id)) {
-        dms.push(data);
-        setupRoomListener(data.id);
-      }
-    }
-    renderSidebar();
-  }
-
-  /* Room Listeners for Unread Badges */
-  function setupRoomListener(roomId) {
-    if (roomChannelsMap[roomId]) return;
-
-    const ch = ably.channels.get(`chat-room-${roomId}`);
-    roomChannelsMap[roomId] = ch;
-
-    ch.subscribe(msg => {
-      if (currentRoomId !== roomId) {
-        unreadRooms.add(roomId);
-        renderSidebar();
-
-        if (msg.data && msg.data.author !== (currentUser ? currentUser.username : '')) {
-          triggerNotification(roomId, msg.data);
+        // Auto-initialize default channel if Firestore is empty
+        if (!hasGeneral) {
+          setDoc(doc(db, "rooms", "global-general"), {
+            name: "General",
+            passcode: "",
+            creator: "system",
+            isDefault: true
+          });
         }
-      }
-    });
-  }
 
-  function triggerNotification(roomId, msgData) {
-    if (!("Notification" in window) || Notification.permission !== "granted") return;
-
-    let targetName = 'HowApp';
-    const room = rooms.find(r => r.id === roomId);
-    if (room) {
-      targetName = `#${room.name}`;
-    } else {
-      const dm = dms.find(d => d.id === roomId);
-      if (dm && currentUser) {
-        const other = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
-        targetName = `@${other}`;
-      }
+        renderRoomList();
+      });
     }
 
-    new Notification(`New message in ${targetName}`, {
-      body: `${msgData.author}: ${msgData.text}`,
-      icon: 'favicon.png'
-    });
-  }
+    function renderRoomList() {
+      const listContainer = document.getElementById('room-list');
+      if (!listContainer) return;
+      listContainer.innerHTML = '';
 
-  /* UI Setup & Workspace */
-  function initChatWorkspace() {
-    updateUserUI();
-
-    rooms.forEach(r => setupRoomListener(r.id));
-    dms.forEach(d => setupRoomListener(d.id));
-
-    renderSidebar();
-
-    if (!currentRoomId) {
-      switchRoom('global-general');
-    }
-  }
-
-  function renderSidebar() {
-    const roomList = document.getElementById('room-list');
-    const dmList = document.getElementById('dm-list');
-
-    roomList.innerHTML = '';
-    dmList.innerHTML = '';
-
-    // Render Public & Private Channels
-    rooms.forEach(r => {
-      const item = document.createElement('div');
-      item.className = `room-item ${r.id === currentRoomId ? 'active' : ''}`;
-      item.onclick = () => handleRoomClick(r.id);
-
-      const isProtected = !!r.passcode;
-      const isUnread = unreadRooms.has(r.id);
-
-      item.innerHTML = `
-        <div class="room-info">
-          <span class="room-icon">${isProtected ? '🔒' : '#'}</span>
-          <span class="room-name">${escapeHtml(r.name)}</span>
-        </div>
-        ${isUnread ? '<span class="badge unread">NEW</span>' : `<span class="badge ${isProtected ? 'private' : 'public'}">${isProtected ? 'Private' : 'Public'}</span>`}
-      `;
-      roomList.appendChild(item);
-    });
-
-    // Render Direct Messages
-    if (!currentUser) return;
-    const userLower = currentUser.username.toLowerCase();
-
-    dms.forEach(dm => {
-      if (dm.user1.toLowerCase() === userLower || dm.user2.toLowerCase() === userLower) {
-        const otherUser = dm.user1.toLowerCase() === userLower ? dm.user2 : dm.user1;
+      rooms.forEach((room) => {
         const item = document.createElement('div');
-        item.className = `room-item ${dm.id === currentRoomId ? 'active' : ''}`;
-        item.onclick = () => switchRoom(dm.id);
+        item.className = `room-item ${room.id === currentRoomId ? 'active' : ''}`;
 
-        const isUnread = unreadRooms.has(dm.id);
+        const isPrivate = room.passcode && room.passcode.length > 0;
+        const isCreator = currentUser && room.creator && room.creator.toLowerCase() === currentUser.username.toLowerCase();
+        const hasUnread = unreadRooms.has(room.id);
 
         item.innerHTML = `
-          <div class="room-info">
-            <span class="room-icon">@</span>
+          <div class="room-info" onclick="attemptJoinRoom('${room.id}')" style="flex:1;">
+            <span style="font-weight:700; color:var(--text-muted)">#</span>
+            <span class="room-name">${escapeHtml(room.name)}</span>
+          </div>
+          ${hasUnread 
+            ? `<span class="badge unread">Unread</span>`
+            : `<span class="badge ${isPrivate ? 'private' : 'public'}">${isPrivate ? 'Private' : 'Public'}</span>`
+          }
+          ${isCreator && !room.isDefault ? `
+            <button class="icon-btn" onclick="openCreatorSettingsModal(event, '${room.id}')" title="Settings" style="margin-left:6px;">
+              <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </button>
+          ` : ''}
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    /* Realtime DMs Listener */
+    function listenToDMs() {
+      onSnapshot(collection(db, "dms"), (snapshot) => {
+        dms = [];
+        snapshot.forEach((docSnap) => {
+          dms.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderDmList();
+      });
+    }
+
+    function renderDmList() {
+      const dmContainer = document.getElementById('dm-list');
+      if (!dmContainer || !currentUser) return;
+      dmContainer.innerHTML = '';
+
+      const myDms = dms.filter(d => 
+        d.user1.toLowerCase() === currentUser.username.toLowerCase() || 
+        d.user2.toLowerCase() === currentUser.username.toLowerCase()
+      );
+
+      myDms.forEach((dm) => {
+        const otherUser = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
+        const otherAcc = accountsDb[otherUser.toLowerCase()];
+        const hasUnread = unreadRooms.has(dm.id);
+
+        const item = document.createElement('div');
+        item.className = `room-item ${dm.id === currentRoomId ? 'active' : ''}`;
+        item.onclick = () => selectRoom(dm.id, `@${otherUser}`);
+
+        const avatarMarkup = (otherAcc && otherAcc.avatar) 
+          ? `<img src="${otherAcc.avatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" />`
+          : `@`;
+
+        item.innerHTML = `
+          <div class="room-info" style="flex:1;">
+            <span>${avatarMarkup}</span>
             <span class="room-name">${escapeHtml(otherUser)}</span>
           </div>
-          ${isUnread ? '<span class="badge unread">NEW</span>' : '<span class="badge dm">DM</span>'}
+          ${hasUnread 
+            ? `<span class="badge unread">Unread</span>`
+            : `<span class="badge dm">Direct</span>`
+          }
         `;
-        dmList.appendChild(item);
-      }
-    });
-  }
-
-  function handleRoomClick(roomId) {
-    const room = rooms.find(r => r.id === roomId);
-    if (!room) return;
-
-    if (room.passcode && room.creator !== currentUser.username) {
-      pendingRoomId = roomId;
-      document.getElementById('room-pass-input').value = '';
-      openModal('passcode-modal');
-    } else {
-      switchRoom(roomId);
+        dmContainer.appendChild(item);
+      });
     }
-  }
 
-  function verifyPasscode() {
-    const input = document.getElementById('room-pass-input').value.trim();
-    const room = rooms.find(r => r.id === pendingRoomId);
+    /* Room Joins & Creation */
+    window.attemptJoinRoom = (roomId) => {
+      const room = rooms.find(r => r.id === roomId);
+      if (!room) return;
 
-    if (room && room.passcode === input) {
-      closeModal('passcode-modal');
-      switchRoom(pendingRoomId);
-      pendingRoomId = null;
-    } else {
-      alert('Incorrect passcode!');
-    }
-  }
-
-  function switchRoom(roomId) {
-    unreadRooms.delete(roomId);
-    currentRoomId = roomId;
-
-    renderSidebar();
-
-    const room = rooms.find(r => r.id === roomId);
-    const dm = dms.find(d => d.id === roomId);
-    const settingsBtnContainer = document.getElementById('room-settings-btn-container');
-
-    if (room) {
-      document.getElementById('current-room-title').textContent = `# ${room.name}`;
-      if (room.creator === currentUser.username && !room.isDefault) {
-        targetCreatorRoomId = room.id;
-        settingsBtnContainer.classList.remove('hidden');
+      if (room.passcode) {
+        pendingRoomId = roomId;
+        document.getElementById('room-pass-input').value = '';
+        openModal('passcode-modal');
       } else {
-        settingsBtnContainer.classList.add('hidden');
+        selectRoom(roomId);
       }
-    } else if (dm) {
-      const otherUser = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
-      document.getElementById('current-room-title').textContent = `@ ${otherUser}`;
-      settingsBtnContainer.classList.add('hidden');
-    }
+    };
 
-    // Unsubscribe from active realtime channel
-    if (currentActiveChannel && activeMsgSubscriber) {
-      currentActiveChannel.unsubscribe(activeMsgSubscriber);
-    }
+    window.verifyPasscode = () => {
+      const input = document.getElementById('room-pass-input').value;
+      const room = rooms.find(r => r.id === pendingRoomId);
 
-    const messagesContainer = document.getElementById('messages-container');
-    messagesContainer.innerHTML = '';
+      if (room && room.passcode === input) {
+        selectRoom(pendingRoomId);
+        closeModal('passcode-modal');
+      } else {
+        alert('Incorrect passcode!');
+      }
+    };
 
-    currentActiveChannel = ably.channels.get(`chat-room-${roomId}`, { params: { rewind: '100' } });
+    window.createRoom = async () => {
+      const name = document.getElementById('new-room-name').value.trim();
+      const pass = document.getElementById('new-room-pass').value.trim();
 
-    // Fetch historical messages
-    currentActiveChannel.history({ limit: 100 }, (err, resultPage) => {
-      if (!err && resultPage.items) {
-        resultPage.items.reverse().forEach(msg => {
-          appendMessage(msg.data);
+      if (!name) return alert('Enter a channel name.');
+
+      const newRef = doc(collection(db, "rooms"));
+      await setDoc(newRef, {
+        name: name,
+        passcode: pass,
+        creator: currentUser.username
+      });
+
+      document.getElementById('new-room-name').value = '';
+      document.getElementById('new-room-pass').value = '';
+      closeModal('create-room-modal');
+
+      selectRoom(newRef.id);
+    };
+
+    window.createDM = async () => {
+      const targetUser = document.getElementById('dm-target-username').value.trim();
+
+      if (!targetUser) return alert('Enter target username.');
+      if (targetUser.toLowerCase() === currentUser.username.toLowerCase()) return alert('Cannot DM yourself.');
+      if (!accountsDb[targetUser.toLowerCase()]) return alert(`User "@${targetUser}" was not found.`);
+
+      const sorted = [currentUser.username.toLowerCase(), targetUser.toLowerCase()].sort();
+      const dmId = `dm-${sorted[0]}--${sorted[1]}`;
+
+      await setDoc(doc(db, "dms", dmId), {
+        user1: currentUser.username,
+        user2: targetUser
+      });
+
+      document.getElementById('dm-target-username').value = '';
+      closeModal('create-dm-modal');
+
+      selectRoom(dmId, `@${targetUser}`);
+    };
+
+    /* Creator Room Editing */
+    window.openCreatorSettingsModal = (e, roomId) => {
+      e.stopPropagation();
+      targetCreatorRoomId = roomId;
+      const room = rooms.find(r => r.id === roomId);
+
+      document.getElementById('edit-room-name').value = room.name;
+      document.getElementById('edit-room-pass').value = room.passcode || '';
+      openModal('creator-settings-modal');
+    };
+
+    window.saveRoomEdits = async () => {
+      const newName = document.getElementById('edit-room-name').value.trim();
+      const newPass = document.getElementById('edit-room-pass').value.trim();
+
+      if (!newName) return alert('Channel name required.');
+
+      await updateDoc(doc(db, "rooms", targetCreatorRoomId), {
+        name: newName,
+        passcode: newPass
+      });
+
+      closeModal('creator-settings-modal');
+    };
+
+    window.deleteRoom = async () => {
+      if (confirm("Delete this channel permanently?")) {
+        await deleteDoc(doc(db, "rooms", targetCreatorRoomId));
+        closeModal('creator-settings-modal');
+        selectRoom('global-general');
+      }
+    };
+
+    /* Real-Time Room Messages Listener */
+    function selectRoom(roomId, customTitle = null) {
+      if (activeMessageUnsubscribe) activeMessageUnsubscribe();
+
+      unreadRooms.delete(roomId);
+      currentRoomId = roomId;
+
+      const room = rooms.find(r => r.id === roomId);
+      document.getElementById('current-room-title').innerText = customTitle ? customTitle : `# ${room ? room.name : 'Channel'}`;
+      document.getElementById('messages-container').innerHTML = '';
+
+      const q = query(
+        collection(db, "chats", roomId, "messages"), 
+        orderBy("timestamp", "asc")
+      );
+
+      let initialLoad = true;
+      activeMessageUnsubscribe = onSnapshot(q, (snapshot) => {
+        const container = document.getElementById('messages-container');
+        container.innerHTML = '';
+
+        snapshot.forEach((docSnap) => {
+          const msg = docSnap.data();
+          appendMessageUI(msg);
         });
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      }
 
-      // Live subscriber for the active room workspace
-      activeMsgSubscriber = function(msg) {
-        appendMessage(msg.data);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      };
+        // Trigger device push notifications for live new messages when off-focus
+        if (!initialLoad && snapshot.docChanges().length > 0) {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const msgData = change.doc.data();
+              if (msgData.user !== currentUser.username) {
+                triggerNotification(roomId, msgData);
+              }
+            }
+          });
+        }
+        initialLoad = false;
+      });
 
-      currentActiveChannel.subscribe(activeMsgSubscriber);
-    });
-  }
+      renderRoomList();
+      renderDmList();
+    }
 
-  function appendMessage(msgData) {
-    if (!msgData || !msgData.author) return;
+    /* Message Sending */
+    window.sendMessage = async () => {
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+      if (!text || !currentRoomId) return;
 
-    const container = document.getElementById('messages-container');
-    const isOwn = currentUser && msgData.author.toLowerCase() === currentUser.username.toLowerCase();
+      const userAcc = accountsDb[currentUser.username.toLowerCase()];
+      
+      await addDoc(collection(db, "chats", currentRoomId, "messages"), {
+        user: currentUser.username,
+        avatar: (userAcc && userAcc.avatar) ? userAcc.avatar : (currentUser.avatar || ''),
+        text: text,
+        timestamp: serverTimestamp(),
+        displayTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
 
-    const msgEl = document.createElement('div');
-    msgEl.className = `message ${isOwn ? 'own' : ''}`;
+      input.value = '';
+    };
 
-    const initial = msgData.author.charAt(0).toUpperCase();
-    const avatarContent = msgData.avatar 
-      ? `<img src="${msgData.avatar}" alt="Avatar" />` 
-      : initial;
+    function appendMessageUI(msg) {
+      const container = document.getElementById('messages-container');
+      const isOwn = currentUser && (msg.user === currentUser.username);
+      const msgEl = document.createElement('div');
+      msgEl.className = `message ${isOwn ? 'own' : ''}`;
 
-    const timeStr = msgData.timestamp 
-      ? new Date(msgData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : '';
+      const initial = msg.user ? msg.user.charAt(0).toUpperCase() : '?';
+      const userAcc = accountsDb[msg.user ? msg.user.toLowerCase() : ''];
+      const avatarSrc = (userAcc && userAcc.avatar) ? userAcc.avatar : msg.avatar;
 
-    msgEl.innerHTML = `
-      <div class="avatar-container">${avatarContent}</div>
-      <div class="message-content-wrapper">
-        <div class="meta">
-          <span class="author">${escapeHtml(msgData.author)}</span>
-          <span class="timestamp">${timeStr}</span>
+      const avatarMarkup = avatarSrc 
+        ? `<img src="${avatarSrc}" alt="${msg.user}" />`
+        : initial;
+
+      msgEl.innerHTML = `
+        <div class="avatar-container">${avatarMarkup}</div>
+        <div class="message-content-wrapper">
+          <div class="meta">
+            <span class="author">${escapeHtml(msg.user || 'Unknown')}</span>
+            <span>${msg.displayTime || ''}</span>
+          </div>
+          <div class="message-bubble">${escapeHtml(msg.text || '')}</div>
         </div>
-        <div class="message-bubble">${escapeHtml(msgData.text)}</div>
-      </div>
-    `;
+      `;
 
-    container.appendChild(msgEl);
-  }
-
-  function sendMessage() {
-    const input = document.getElementById('message-input');
-    const text = input.value.trim();
-
-    if (!text || !currentRoomId || !currentUser) return;
-
-    const payload = {
-      author: currentUser.username,
-      avatar: currentUser.avatar || '',
-      text: text,
-      timestamp: Date.now()
-    };
-
-    currentActiveChannel.publish('chat-msg', payload);
-    input.value = '';
-  }
-
-  /* Channels Creation & Management */
-  function createRoom() {
-    const nameInput = document.getElementById('new-room-name');
-    const passInput = document.getElementById('new-room-pass');
-
-    const name = nameInput.value.trim();
-    const pass = passInput.value.trim();
-
-    if (!name) {
-      alert('Please enter a channel name.');
-      return;
+      container.appendChild(msgEl);
+      container.scrollTop = container.scrollHeight;
     }
 
-    const roomId = 'room-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+    function triggerNotification(roomId, msgData) {
+      if ("Notification" in window && Notification.permission === "granted") {
+        let title = "HowApp Message";
+        const room = rooms.find(r => r.id === roomId);
 
-    const payload = {
-      action: 'create',
-      id: roomId,
-      name: name,
-      passcode: pass,
-      creator: currentUser.username
-    };
+        if (room) title = `#${room.name}`;
+        else if (roomId.startsWith('dm-')) title = `DM from @${msgData.user}`;
 
-    roomDirChannel.publish('room-evt', payload);
+        const notif = new Notification(title, {
+          body: `${msgData.user}: ${msgData.text}`,
+          icon: msgData.avatar || undefined
+        });
 
-    nameInput.value = '';
-    passInput.value = '';
-    closeModal('create-room-modal');
-
-    setTimeout(() => switchRoom(roomId), 200);
-  }
-
-  function openCreatorSettings() {
-    const room = rooms.find(r => r.id === targetCreatorRoomId);
-    if (!room) return;
-
-    document.getElementById('edit-room-name').value = room.name;
-    document.getElementById('edit-room-pass').value = room.passcode || '';
-    openModal('creator-settings-modal');
-  }
-
-  function saveRoomEdits() {
-    const newName = document.getElementById('edit-room-name').value.trim();
-    const newPass = document.getElementById('edit-room-pass').value.trim();
-
-    if (!newName) {
-      alert('Channel name cannot be empty.');
-      return;
+        notif.onclick = () => {
+          window.focus();
+          selectRoom(roomId);
+        };
+      }
     }
 
-    const payload = {
-      action: 'update',
-      id: targetCreatorRoomId,
-      name: newName,
-      passcode: newPass
+    // Modal Helpers
+    window.openModal = (id) => {
+      document.getElementById(id).classList.remove('hidden');
+      const input = document.getElementById(id).querySelector('input:not([disabled])');
+      if (input) input.focus();
     };
-
-    roomDirChannel.publish('room-evt', payload);
-    closeModal('creator-settings-modal');
-  }
-
-  function deleteRoom() {
-    if (!confirm('Are you sure you want to delete this channel?')) return;
-
-    const payload = {
-      action: 'delete',
-      id: targetCreatorRoomId
-    };
-
-    roomDirChannel.publish('room-evt', payload);
-    closeModal('creator-settings-modal');
-  }
-
-  /* Direct Messages Creation */
-  function createDM() {
-    const targetInput = document.getElementById('dm-target-username');
-    const targetName = targetInput.value.trim();
-
-    if (!targetName) {
-      alert('Please enter a username.');
-      return;
-    }
-
-    if (targetName.toLowerCase() === currentUser.username.toLowerCase()) {
-      alert('You cannot start a direct message with yourself.');
-      return;
-    }
-
-    if (!accountsDb[targetName.toLowerCase()]) {
-      alert('Target user does not exist.');
-      return;
-    }
-
-    const u1 = currentUser.username.toLowerCase();
-    const u2 = targetName.toLowerCase();
-    const dmId = 'dm-' + (u1 < u2 ? `${u1}-${u2}` : `${u2}-${u1}`);
-
-    const payload = {
-      action: 'create',
-      id: dmId,
-      user1: currentUser.username,
-      user2: accountsDb[u2].username
-    };
-
-    dmDirChannel.publish('dm-evt', payload);
-
-    targetInput.value = '';
-    closeModal('create-dm-modal');
-
-    setTimeout(() => switchRoom(dmId), 200);
-  }
-
-  /* Modal Helpers */
-  function openModal(id) {
-    document.getElementById(id).classList.remove('hidden');
-  }
-
-  function closeModal(id) {
-    document.getElementById(id).classList.add('hidden');
-  }
-
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
+    window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+    function escapeHtml(str) { return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
   </script>
 </body>
 </html>
