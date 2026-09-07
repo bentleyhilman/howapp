@@ -402,6 +402,13 @@
       font-size: 0.72rem;
       font-weight: 800;
       color: #fff;
+      overflow: hidden;
+    }
+
+    .profile-avatar-mini img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .user-badge-name {
@@ -921,6 +928,11 @@
             <span class="online-indicator"></span> Realtime Cloud Sync Active
           </div>
         </div>
+        <div id="room-settings-btn-container" class="hidden">
+          <button class="icon-btn" onclick="openCreatorSettings()" title="Channel Settings">
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          </button>
+        </div>
       </div>
 
       <div class="messages-container" id="messages-container"></div>
@@ -1111,387 +1123,394 @@
     openModal('account-settings-modal');
   }
 
-  function handleAvatarSelect(e) {
-    const file = e.target.files[0];
+  function handleAvatarSelect(evt) {
+    const file = evt.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      const img = new Image();
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 80;
-        canvas.height = 80;
-        ctx.drawImage(img, 0, 0, 80, 80);
-        tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Please select an image smaller than 2MB.');
+      return;
+    }
 
-        const previewImg = document.getElementById('avatar-preview-img');
-        previewImg.src = tempAvatarBase64;
-        previewImg.classList.remove('hidden');
-        document.getElementById('avatar-preview-placeholder').classList.add('hidden');
-      };
-      img.src = evt.target.result;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      tempAvatarBase64 = e.target.result;
+      const previewImg = document.getElementById('avatar-preview-img');
+      const placeholder = document.getElementById('avatar-preview-placeholder');
+      previewImg.src = tempAvatarBase64;
+      previewImg.classList.remove('hidden');
+      placeholder.classList.add('hidden');
     };
     reader.readAsDataURL(file);
   }
 
   function saveAccountSettings() {
+    const newPass = document.getElementById('settings-new-password').value.trim();
     const acc = accountsDb[currentUser.username.toLowerCase()];
-    const newPasswordInput = document.getElementById('settings-new-password').value.trim();
-    
-    const updatedPassword = newPasswordInput.length > 0 ? newPasswordInput : (acc ? acc.password : '');
-    const updatedAvatar = tempAvatarBase64 || '';
 
     const payload = {
       action: 'update',
       username: currentUser.username,
-      password: updatedPassword,
-      avatar: updatedAvatar
+      password: newPass !== '' ? newPass : (acc ? acc.password : ''),
+      avatar: tempAvatarBase64 || ''
     };
 
     globalAccountsChannel.publish('account-evt', payload);
-
-    currentUser.avatar = updatedAvatar;
+    currentUser.avatar = tempAvatarBase64 || '';
     updateUserUI();
     closeModal('account-settings-modal');
   }
 
   function updateUserUI() {
-    document.getElementById('user-badge-name').innerText = `@${currentUser.username}`;
+    if (!currentUser) return;
+    document.getElementById('user-badge-name').textContent = '@' + currentUser.username;
     const badgeAvatar = document.getElementById('user-badge-avatar');
-
+    
     if (currentUser.avatar) {
-      badgeAvatar.innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+      badgeAvatar.innerHTML = `<img src="${currentUser.avatar}" alt="Avatar" />`;
     } else {
-      badgeAvatar.innerText = currentUser.username.charAt(0).toUpperCase();
+      badgeAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
     }
   }
 
-  /* Workspace & Sync Initialization */
-  function initChatWorkspace() {
-    updateUserUI();
-    renderRoomList();
-    renderDmList();
-    selectRoom('global-general');
-  }
-
-  /* Background Message Monitoring for Unreads & Notifications */
-  function attachUnreadListener(roomId) {
-    if (roomChannelsMap[roomId]) return;
-
-    const ch = ably.channels.get(`chat-msg-${roomId}`);
-    roomChannelsMap[roomId] = ch;
-
-    ch.subscribe('msg', (msg) => {
-      // Only trigger notification/unread if message comes from someone else AND room is not active
-      if (currentUser && msg.data.user !== currentUser.username && roomId !== currentRoomId) {
-        unreadRooms.add(roomId);
-        renderRoomList();
-        renderDmList();
-        triggerDeviceNotification(roomId, msg.data);
-      }
-    });
-  }
-
-  function triggerDeviceNotification(roomId, msgData) {
-    if ("Notification" in window && Notification.permission === "granted") {
-      let title = "HowApp Message";
-      const room = rooms.find(r => r.id === roomId);
-
-      if (room) {
-        title = `#${room.name}`;
-      } else if (roomId.startsWith('dm-')) {
-        title = `DM from @${msgData.user}`;
-      }
-
-      const notif = new Notification(title, {
-        body: `${msgData.user}: ${msgData.text}`,
-        icon: msgData.avatar || undefined
-      });
-
-      notif.onclick = function() {
-        window.focus();
-        selectRoom(roomId);
-      };
-    }
-  }
-
-  /* Room Directory Cloud Sync */
+  /* Room Directory Sync */
   function syncRoomDirectory() {
     roomDirChannel = ably.channels.get('app-room-directory', { params: { rewind: '100' } });
 
-    roomDirChannel.history({ limit: 100 }, (err, page) => {
-      if (!err && page.items) {
-        page.items.reverse().forEach(msg => handleRoomEvent(msg));
+    roomDirChannel.history({ limit: 100 }, (err, resultPage) => {
+      if (!err && resultPage.items) {
+        resultPage.items.reverse().forEach(msg => {
+          applyRoomEvent(msg.data);
+        });
       }
-      renderRoomList();
-    });
 
-    roomDirChannel.subscribe(msg => {
-      handleRoomEvent(msg);
-      renderRoomList();
+      roomDirChannel.subscribe(msg => {
+        applyRoomEvent(msg.data);
+      });
     });
   }
 
-  function handleRoomEvent(msg) {
-    if (msg.name === 'new-room') {
-      if (!rooms.some(r => r.id === msg.data.id)) {
-        rooms.push(msg.data);
-        attachUnreadListener(msg.data.id);
+  function applyRoomEvent(data) {
+    if (!data || !data.id) return;
+
+    if (data.action === 'create') {
+      if (!rooms.some(r => r.id === data.id)) {
+        rooms.push({ id: data.id, name: data.name, passcode: data.passcode || '', creator: data.creator });
+        setupRoomListener(data.id);
       }
-    } else if (msg.name === 'update-room') {
-      const room = rooms.find(r => r.id === msg.data.id);
-      if (room) {
-        room.name = msg.data.name;
-        room.passcode = msg.data.passcode;
-        if (currentRoomId === room.id) {
-          document.getElementById('current-room-title').innerText = `# ${room.name}`;
-        }
+    } else if (data.action === 'update') {
+      const idx = rooms.findIndex(r => r.id === data.id);
+      if (idx !== -1) {
+        rooms[idx].name = data.name;
+        rooms[idx].passcode = data.passcode || '';
       }
-    } else if (msg.name === 'delete-room') {
-      rooms = rooms.filter(r => r.id !== msg.data.id);
-      if (unreadRooms.has(msg.data.id)) unreadRooms.delete(msg.data.id);
-      if (currentRoomId === msg.data.id) {
-        selectRoom('global-general');
+    } else if (data.action === 'delete') {
+      rooms = rooms.filter(r => r.id !== data.id);
+      if (currentRoomId === data.id) {
+        switchRoom('global-general');
       }
     }
+
+    renderSidebar();
   }
 
-  /* DM Directory Cloud Sync */
+  /* DM Directory Sync */
   function syncDmDirectory() {
     dmDirChannel = ably.channels.get('app-dm-directory', { params: { rewind: '100' } });
 
-    dmDirChannel.history({ limit: 100 }, (err, page) => {
-      if (!err && page.items) {
-        page.items.reverse().forEach(msg => {
-          if (msg.name === 'new-dm' && !dms.some(d => d.id === msg.data.id)) {
-            dms.push(msg.data);
-            attachUnreadListener(msg.data.id);
-          }
+    dmDirChannel.history({ limit: 100 }, (err, resultPage) => {
+      if (!err && resultPage.items) {
+        resultPage.items.reverse().forEach(msg => {
+          applyDmEvent(msg.data);
         });
       }
-      renderDmList();
-    });
 
-    dmDirChannel.subscribe('new-dm', msg => {
-      if (!dms.some(d => d.id === msg.data.id)) {
-        dms.push(msg.data);
-        attachUnreadListener(msg.data.id);
-        renderDmList();
+      dmDirChannel.subscribe(msg => {
+        applyDmEvent(msg.data);
+      });
+    });
+  }
+
+  function applyDmEvent(data) {
+    if (!data || !data.id) return;
+
+    if (data.action === 'create') {
+      if (!dms.some(d => d.id === data.id)) {
+        dms.push(data);
+        setupRoomListener(data.id);
+      }
+    }
+    renderSidebar();
+  }
+
+  /* Room Listeners for Unread Badges */
+  function setupRoomListener(roomId) {
+    if (roomChannelsMap[roomId]) return;
+
+    const ch = ably.channels.get(`chat-room-${roomId}`);
+    roomChannelsMap[roomId] = ch;
+
+    ch.subscribe(msg => {
+      if (currentRoomId !== roomId) {
+        unreadRooms.add(roomId);
+        renderSidebar();
+
+        if (msg.data && msg.data.author !== (currentUser ? currentUser.username : '')) {
+          triggerNotification(roomId, msg.data);
+        }
       }
     });
   }
 
-  /* Rendering Navigation Sidebar */
-  function renderRoomList() {
-    const listContainer = document.getElementById('room-list');
-    if (!listContainer) return;
-    listContainer.innerHTML = '';
+  function triggerNotification(roomId, msgData) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
 
-    rooms.forEach((room, idx) => {
-      attachUnreadListener(room.id);
-      const item = document.createElement('div');
-      item.className = `room-item ${room.id === currentRoomId ? 'active' : ''}`;
-      item.style.animationDelay = `${idx * 0.03}s`;
-      
-      const isPrivate = room.passcode && room.passcode.length > 0;
-      const isCreator = currentUser && room.creator && room.creator.toLowerCase() === currentUser.username.toLowerCase();
-      const hasUnread = unreadRooms.has(room.id);
+    let targetName = 'HowApp';
+    const room = rooms.find(r => r.id === roomId);
+    if (room) {
+      targetName = `#${room.name}`;
+    } else {
+      const dm = dms.find(d => d.id === roomId);
+      if (dm && currentUser) {
+        const other = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
+        targetName = `@${other}`;
+      }
+    }
 
-      item.innerHTML = `
-        <div class="room-info" onclick="attemptJoinRoom('${room.id}')" style="flex:1;">
-          <span class="room-icon">#</span>
-          <span class="room-name">${escapeHtml(room.name)}</span>
-        </div>
-        ${hasUnread 
-          ? `<span class="badge unread">Unread</span>`
-          : `<span class="badge ${isPrivate ? 'private' : 'public'}">${isPrivate ? 'Private' : 'Public'}</span>`
-        }
-        ${isCreator && !room.isDefault ? `
-          <button class="icon-btn" onclick="openCreatorSettingsModal(event, '${room.id}')" title="Channel Settings" style="margin-left:6px;">
-            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-          </button>
-        ` : ''}
-      `;
-      listContainer.appendChild(item);
+    new Notification(`New message in ${targetName}`, {
+      body: `${msgData.author}: ${msgData.text}`,
+      icon: 'favicon.png'
     });
   }
 
-  function renderDmList() {
-    const dmContainer = document.getElementById('dm-list');
-    if (!dmContainer || !currentUser) return;
-    dmContainer.innerHTML = '';
+  /* UI Setup & Workspace */
+  function initChatWorkspace() {
+    updateUserUI();
 
-    const myDms = dms.filter(d => 
-      d.user1.toLowerCase() === currentUser.username.toLowerCase() || 
-      d.user2.toLowerCase() === currentUser.username.toLowerCase()
-    );
+    rooms.forEach(r => setupRoomListener(r.id));
+    dms.forEach(d => setupRoomListener(d.id));
 
-    myDms.forEach((dm, idx) => {
-      attachUnreadListener(dm.id);
-      const otherUser = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
-      const otherAcc = accountsDb[otherUser.toLowerCase()];
-      const hasUnread = unreadRooms.has(dm.id);
+    renderSidebar();
 
+    if (!currentRoomId) {
+      switchRoom('global-general');
+    }
+  }
+
+  function renderSidebar() {
+    const roomList = document.getElementById('room-list');
+    const dmList = document.getElementById('dm-list');
+
+    roomList.innerHTML = '';
+    dmList.innerHTML = '';
+
+    // Render Public & Private Channels
+    rooms.forEach(r => {
       const item = document.createElement('div');
-      item.className = `room-item ${dm.id === currentRoomId ? 'active' : ''}`;
-      item.style.animationDelay = `${idx * 0.03}s`;
-      item.onclick = () => selectRoom(dm.id, `@${otherUser}`);
+      item.className = `room-item ${r.id === currentRoomId ? 'active' : ''}`;
+      item.onclick = () => handleRoomClick(r.id);
 
-      const avatarMarkup = (otherAcc && otherAcc.avatar) 
-        ? `<img src="${otherAcc.avatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" />`
-        : `@`;
+      const isProtected = !!r.passcode;
+      const isUnread = unreadRooms.has(r.id);
 
       item.innerHTML = `
-        <div class="room-info" style="flex:1;">
-          <span class="room-icon">${avatarMarkup}</span>
-          <span class="room-name">${escapeHtml(otherUser)}</span>
+        <div class="room-info">
+          <span class="room-icon">${isProtected ? '🔒' : '#'}</span>
+          <span class="room-name">${escapeHtml(r.name)}</span>
         </div>
-        ${hasUnread 
-          ? `<span class="badge unread">Unread</span>`
-          : `<span class="badge dm">Direct</span>`
-        }
+        ${isUnread ? '<span class="badge unread">NEW</span>' : `<span class="badge ${isProtected ? 'private' : 'public'}">${isProtected ? 'Private' : 'Public'}</span>`}
       `;
-      dmContainer.appendChild(item);
+      roomList.appendChild(item);
+    });
+
+    // Render Direct Messages
+    if (!currentUser) return;
+    const userLower = currentUser.username.toLowerCase();
+
+    dms.forEach(dm => {
+      if (dm.user1.toLowerCase() === userLower || dm.user2.toLowerCase() === userLower) {
+        const otherUser = dm.user1.toLowerCase() === userLower ? dm.user2 : dm.user1;
+        const item = document.createElement('div');
+        item.className = `room-item ${dm.id === currentRoomId ? 'active' : ''}`;
+        item.onclick = () => switchRoom(dm.id);
+
+        const isUnread = unreadRooms.has(dm.id);
+
+        item.innerHTML = `
+          <div class="room-info">
+            <span class="room-icon">@</span>
+            <span class="room-name">${escapeHtml(otherUser)}</span>
+          </div>
+          ${isUnread ? '<span class="badge unread">NEW</span>' : '<span class="badge dm">DM</span>'}
+        `;
+        dmList.appendChild(item);
+      }
     });
   }
 
-  /* DM Feature */
-  function createDM() {
-    const targetUser = document.getElementById('dm-target-username').value.trim();
-
-    if (!targetUser) {
-      alert('Please enter a username.');
-      return;
-    }
-
-    if (targetUser.toLowerCase() === currentUser.username.toLowerCase()) {
-      alert('You cannot start a direct message with yourself.');
-      return;
-    }
-
-    if (!accountsDb[targetUser.toLowerCase()]) {
-      alert(`User "@${targetUser}" was not found on HowApp.`);
-      return;
-    }
-
-    const sortedUsers = [currentUser.username.toLowerCase(), targetUser.toLowerCase()].sort();
-    const dmId = `dm-${sortedUsers[0]}--${sortedUsers[1]}`;
-
-    const dmPayload = {
-      id: dmId,
-      user1: currentUser.username,
-      user2: targetUser
-    };
-
-    dmDirChannel.publish('new-dm', dmPayload);
-
-    document.getElementById('dm-target-username').value = '';
-    closeModal('create-dm-modal');
-
-    selectRoom(dmId, `@${targetUser}`);
-  }
-
-  /* Channel Room Operations */
-  function attemptJoinRoom(roomId) {
+  function handleRoomClick(roomId) {
     const room = rooms.find(r => r.id === roomId);
     if (!room) return;
 
-    if (room.passcode) {
+    if (room.passcode && room.creator !== currentUser.username) {
       pendingRoomId = roomId;
       document.getElementById('room-pass-input').value = '';
       openModal('passcode-modal');
     } else {
-      selectRoom(roomId);
+      switchRoom(roomId);
     }
   }
 
   function verifyPasscode() {
-    const input = document.getElementById('room-pass-input').value;
+    const input = document.getElementById('room-pass-input').value.trim();
     const room = rooms.find(r => r.id === pendingRoomId);
 
     if (room && room.passcode === input) {
-      selectRoom(pendingRoomId);
       closeModal('passcode-modal');
+      switchRoom(pendingRoomId);
+      pendingRoomId = null;
     } else {
       alert('Incorrect passcode!');
     }
   }
 
-  function selectRoom(roomId, customTitle = null) {
-    // Unsubscribe previous active listener if exists
-    if (currentActiveChannel && activeMsgSubscriber) {
-      currentActiveChannel.unsubscribe('msg', activeMsgSubscriber);
-    }
-
-    // Clear unread status when opening the channel
-    if (unreadRooms.has(roomId)) {
-      unreadRooms.delete(roomId);
-    }
-
+  function switchRoom(roomId) {
+    unreadRooms.delete(roomId);
     currentRoomId = roomId;
-    const room = rooms.find(r => r.id === roomId);
-    
-    const titleText = customTitle ? customTitle : `# ${room ? room.name : 'Channel'}`;
-    document.getElementById('current-room-title').innerText = titleText;
-    document.getElementById('messages-container').innerHTML = '';
 
-    currentActiveChannel = roomChannelsMap[roomId] || ably.channels.get(`chat-msg-${roomId}`, { params: { rewind: '100' } });
-    
-    // Fetch recent message history
+    renderSidebar();
+
+    const room = rooms.find(r => r.id === roomId);
+    const dm = dms.find(d => d.id === roomId);
+    const settingsBtnContainer = document.getElementById('room-settings-btn-container');
+
+    if (room) {
+      document.getElementById('current-room-title').textContent = `# ${room.name}`;
+      if (room.creator === currentUser.username && !room.isDefault) {
+        targetCreatorRoomId = room.id;
+        settingsBtnContainer.classList.remove('hidden');
+      } else {
+        settingsBtnContainer.classList.add('hidden');
+      }
+    } else if (dm) {
+      const otherUser = dm.user1.toLowerCase() === currentUser.username.toLowerCase() ? dm.user2 : dm.user1;
+      document.getElementById('current-room-title').textContent = `@ ${otherUser}`;
+      settingsBtnContainer.classList.add('hidden');
+    }
+
+    // Unsubscribe from active realtime channel
+    if (currentActiveChannel && activeMsgSubscriber) {
+      currentActiveChannel.unsubscribe(activeMsgSubscriber);
+    }
+
+    const messagesContainer = document.getElementById('messages-container');
+    messagesContainer.innerHTML = '';
+
+    currentActiveChannel = ably.channels.get(`chat-room-${roomId}`, { params: { rewind: '100' } });
+
+    // Fetch historical messages
     currentActiveChannel.history({ limit: 100 }, (err, resultPage) => {
       if (!err && resultPage.items) {
-        document.getElementById('messages-container').innerHTML = '';
-        const historyMsgs = resultPage.items.reverse();
-        historyMsgs.forEach(msg => appendMessage(msg.data));
+        resultPage.items.reverse().forEach(msg => {
+          appendMessage(msg.data);
+        });
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
+
+      // Live subscriber for the active room workspace
+      activeMsgSubscriber = function(msg) {
+        appendMessage(msg.data);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      };
+
+      currentActiveChannel.subscribe(activeMsgSubscriber);
     });
-
-    // Attach real-time subscriber for active workspace viewing
-    activeMsgSubscriber = (msg) => {
-      appendMessage(msg.data);
-    };
-    currentActiveChannel.subscribe('msg', activeMsgSubscriber);
-
-    renderRoomList();
-    renderDmList();
   }
 
+  function appendMessage(msgData) {
+    if (!msgData || !msgData.author) return;
+
+    const container = document.getElementById('messages-container');
+    const isOwn = currentUser && msgData.author.toLowerCase() === currentUser.username.toLowerCase();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = `message ${isOwn ? 'own' : ''}`;
+
+    const initial = msgData.author.charAt(0).toUpperCase();
+    const avatarContent = msgData.avatar 
+      ? `<img src="${msgData.avatar}" alt="Avatar" />` 
+      : initial;
+
+    const timeStr = msgData.timestamp 
+      ? new Date(msgData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    msgEl.innerHTML = `
+      <div class="avatar-container">${avatarContent}</div>
+      <div class="message-content-wrapper">
+        <div class="meta">
+          <span class="author">${escapeHtml(msgData.author)}</span>
+          <span class="timestamp">${timeStr}</span>
+        </div>
+        <div class="message-bubble">${escapeHtml(msgData.text)}</div>
+      </div>
+    `;
+
+    container.appendChild(msgEl);
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+
+    if (!text || !currentRoomId || !currentUser) return;
+
+    const payload = {
+      author: currentUser.username,
+      avatar: currentUser.avatar || '',
+      text: text,
+      timestamp: Date.now()
+    };
+
+    currentActiveChannel.publish('chat-msg', payload);
+    input.value = '';
+  }
+
+  /* Channels Creation & Management */
   function createRoom() {
-    const name = document.getElementById('new-room-name').value.trim();
-    const pass = document.getElementById('new-room-pass').value.trim();
+    const nameInput = document.getElementById('new-room-name');
+    const passInput = document.getElementById('new-room-pass');
+
+    const name = nameInput.value.trim();
+    const pass = passInput.value.trim();
 
     if (!name) {
       alert('Please enter a channel name.');
       return;
     }
 
-    const newRoom = {
-      id: 'room-' + Date.now(),
+    const roomId = 'room-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+
+    const payload = {
+      action: 'create',
+      id: roomId,
       name: name,
       passcode: pass,
       creator: currentUser.username
     };
 
-    roomDirChannel.publish('new-room', newRoom);
+    roomDirChannel.publish('room-evt', payload);
 
-    document.getElementById('new-room-name').value = '';
-    document.getElementById('new-room-pass').value = '';
+    nameInput.value = '';
+    passInput.value = '';
     closeModal('create-room-modal');
 
-    selectRoom(newRoom.id);
+    setTimeout(() => switchRoom(roomId), 200);
   }
 
-  function openCreatorSettingsModal(event, roomId) {
-    event.stopPropagation();
-    targetCreatorRoomId = roomId;
-    const room = rooms.find(r => r.id === roomId);
-
-    if (!room || room.creator.toLowerCase() !== currentUser.username.toLowerCase()) {
-      alert('Only the creator of this channel can manage its settings.');
-      return;
-    }
+  function openCreatorSettings() {
+    const room = rooms.find(r => r.id === targetCreatorRoomId);
+    if (!room) return;
 
     document.getElementById('edit-room-name').value = room.name;
     document.getElementById('edit-room-pass').value = room.passcode || '';
@@ -1507,77 +1526,85 @@
       return;
     }
 
-    roomDirChannel.publish('update-room', {
+    const payload = {
+      action: 'update',
       id: targetCreatorRoomId,
       name: newName,
       passcode: newPass
-    });
+    };
 
+    roomDirChannel.publish('room-evt', payload);
     closeModal('creator-settings-modal');
   }
 
   function deleteRoom() {
-    const room = rooms.find(r => r.id === targetCreatorRoomId);
+    if (!confirm('Are you sure you want to delete this channel?')) return;
 
-    if (confirm(`Delete channel #${room ? room.name : ''}?`)) {
-      roomDirChannel.publish('delete-room', { id: targetCreatorRoomId });
-      closeModal('creator-settings-modal');
-    }
-  }
-
-  /* Messaging Logic */
-  function sendMessage() {
-    const input = document.getElementById('message-input');
-    const text = input.value.trim();
-    if (!text || !currentActiveChannel) return;
-
-    const userAcc = accountsDb[currentUser.username.toLowerCase()];
     const payload = {
-      user: currentUser.username,
-      avatar: (userAcc && userAcc.avatar) ? userAcc.avatar : (currentUser.avatar || ''),
-      text: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      action: 'delete',
+      id: targetCreatorRoomId
     };
 
-    currentActiveChannel.publish('msg', payload);
-    input.value = '';
+    roomDirChannel.publish('room-evt', payload);
+    closeModal('creator-settings-modal');
   }
 
-  function appendMessage(msg) {
-    const container = document.getElementById('messages-container');
-    const isOwn = currentUser && (msg.user === currentUser.username);
-    const msgEl = document.createElement('div');
-    msgEl.className = `message ${isOwn ? 'own' : ''}`;
-    
-    const initial = msg.user ? msg.user.charAt(0).toUpperCase() : '?';
-    const userAcc = accountsDb[msg.user ? msg.user.toLowerCase() : ''];
-    const avatarSrc = (userAcc && userAcc.avatar) ? userAcc.avatar : msg.avatar;
+  /* Direct Messages Creation */
+  function createDM() {
+    const targetInput = document.getElementById('dm-target-username');
+    const targetName = targetInput.value.trim();
 
-    const avatarMarkup = avatarSrc 
-      ? `<img src="${avatarSrc}" alt="${msg.user}" />`
-      : initial;
+    if (!targetName) {
+      alert('Please enter a username.');
+      return;
+    }
 
-    msgEl.innerHTML = `
-      <div class="avatar-container">${avatarMarkup}</div>
-      <div class="message-content-wrapper">
-        <div class="meta">
-          <span class="author">${escapeHtml(msg.user || 'Unknown')}</span>
-          <span>${msg.timestamp || ''}</span>
-        </div>
-        <div class="message-bubble">${escapeHtml(msg.text || '')}</div>
-      </div>
-    `;
-    container.appendChild(msgEl);
-    container.scrollTop = container.scrollHeight;
+    if (targetName.toLowerCase() === currentUser.username.toLowerCase()) {
+      alert('You cannot start a direct message with yourself.');
+      return;
+    }
+
+    if (!accountsDb[targetName.toLowerCase()]) {
+      alert('Target user does not exist.');
+      return;
+    }
+
+    const u1 = currentUser.username.toLowerCase();
+    const u2 = targetName.toLowerCase();
+    const dmId = 'dm-' + (u1 < u2 ? `${u1}-${u2}` : `${u2}-${u1}`);
+
+    const payload = {
+      action: 'create',
+      id: dmId,
+      user1: currentUser.username,
+      user2: accountsDb[u2].username
+    };
+
+    dmDirChannel.publish('dm-evt', payload);
+
+    targetInput.value = '';
+    closeModal('create-dm-modal');
+
+    setTimeout(() => switchRoom(dmId), 200);
   }
 
-  function openModal(id) { 
-    document.getElementById(id).classList.remove('hidden'); 
-    const firstInput = document.getElementById(id).querySelector('input:not([disabled])');
-    if (firstInput) firstInput.focus();
+  /* Modal Helpers */
+  function openModal(id) {
+    document.getElementById(id).classList.remove('hidden');
   }
-  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-  function escapeHtml(str) { return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-</script>
+
+  function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+  </script>
 </body>
 </html>
