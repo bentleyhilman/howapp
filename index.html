@@ -39,19 +39,21 @@
       --danger: #ef4444;
     }
 
-    body {
-      background: #060810;
-      color: var(--text-main);
-      height: 100vh;
-      height: 100dvh;
+    html, body {
+      height: 100%;
       width: 100vw;
       overflow: hidden;
+      position: fixed;
+      inset: 0;
+      background: #060810;
+      color: var(--text-main);
+    }
+
+    body {
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
-      position: fixed;
-      inset: 0;
     }
 
     /* DYNAMIC MOVING BACKGROUND GRADIENTS */
@@ -276,6 +278,7 @@
       position: relative;
       height: 100%;
       min-height: 0;
+      overflow: hidden;
     }
 
     .chat-header {
@@ -285,6 +288,7 @@
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      z-index: 2;
     }
 
     .chat-header-info {
@@ -340,6 +344,7 @@
       gap: 16px;
       scroll-behavior: smooth;
       min-height: 0;
+      -webkit-overflow-scrolling: touch;
     }
 
     .message {
@@ -423,6 +428,8 @@
       gap: 12px;
       align-items: center;
       flex-shrink: 0;
+      background: transparent;
+      z-index: 2;
     }
 
     .chat-input-wrapper {
@@ -586,8 +593,8 @@
       #app-container {
         border-radius: 0;
         border: none;
-        max-height: 100dvh;
-        height: 100dvh;
+        height: 100%;
+        max-height: none;
       }
 
       .mobile-menu-btn {
@@ -626,7 +633,8 @@
       }
 
       .chat-input-container {
-        padding: 12px 16px env(safe-area-inset-bottom, 12px) 16px;
+        padding: 12px 16px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
       }
     }
   </style>
@@ -834,25 +842,37 @@
 
     const joinedPrivateRooms = new Set(JSON.parse(localStorage.getItem('howapp_unlocked_rooms') || '[]'));
 
-    // Dynamic Visual Viewport tracking for mobile virtual keyboards
-    if (window.visualViewport) {
-      const handleViewportResize = () => {
-        const appContainer = document.getElementById('app-container');
-        const messagesContainer = document.getElementById('messages-container');
+    // Dynamic Visual Viewport handling for Mobile Virtual Keyboards
+    function updateLayoutForViewport() {
+      const appContainer = document.getElementById('app-container');
+      const messagesContainer = document.getElementById('messages-container');
 
-        if (window.innerWidth <= 768 && appContainer) {
-          appContainer.style.height = `${window.visualViewport.height}px`;
-          if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          }
-        } else if (appContainer) {
-          appContainer.style.height = '';
+      if (window.innerWidth <= 768) {
+        if (window.visualViewport) {
+          const viewportHeight = window.visualViewport.height;
+          const viewportTop = window.visualViewport.offsetTop;
+
+          // Resize body container to target visual area height exactly
+          document.body.style.height = `${viewportHeight}px`;
+          document.body.style.transform = `translateY(${viewportTop}px)`;
+        } else {
+          document.body.style.height = '100dvh';
         }
-      };
+      } else {
+        document.body.style.height = '';
+        document.body.style.transform = '';
+      }
 
-      window.visualViewport.addEventListener('resize', handleViewportResize);
-      window.visualViewport.addEventListener('scroll', handleViewportResize);
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
     }
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateLayoutForViewport);
+      window.visualViewport.addEventListener('scroll', updateLayoutForViewport);
+    }
+    window.addEventListener('resize', updateLayoutForViewport);
 
     function saveUnlockedRooms() {
       localStorage.setItem('howapp_unlocked_rooms', JSON.stringify(Array.from(joinedPrivateRooms)));
@@ -878,6 +898,8 @@
     };
 
     window.addEventListener('load', () => {
+      updateLayoutForViewport();
+
       if ("Notification" in window && Notification.permission === "default") {
         Notification.permission !== "denied" && Notification.requestPermission();
       }
