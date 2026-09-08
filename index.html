@@ -286,7 +286,7 @@
       border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 12px;
       flex-shrink: 0;
       z-index: 2;
     }
@@ -327,6 +327,7 @@
       padding: 8px;
       border-radius: 10px;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     .mobile-menu-btn svg {
@@ -535,7 +536,7 @@
     }
 
     .modal-header { font-size: 1.1rem; font-weight: 700; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
 
     button.btn-primary {
       background: var(--accent-grad);
@@ -680,6 +681,9 @@
 
     <div class="chat-area">
       <div class="chat-header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar(true)" title="Open Menu">
+          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
         <div class="chat-header-info">
           <div class="chat-header-title" id="current-room-title"># General</div>
           <div class="chat-header-status">
@@ -687,9 +691,6 @@
             <span>Realtime Cloud Sync Active</span>
           </div>
         </div>
-        <button class="mobile-menu-btn" onclick="toggleSidebar(true)" title="Open Menu">
-          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-        </button>
       </div>
 
       <div class="messages-container" id="messages-container"></div>
@@ -770,7 +771,7 @@
     <div class="modal">
       <div class="modal-header">Account Settings</div>
       <label style="font-size: 0.75rem; color: var(--text-muted);">Username</label>
-      <input type="text" id="settings-username" disabled style="opacity: 0.5;">
+      <input type="text" id="settings-username" placeholder="Username">
 
       <label style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">New Password</label>
       <input type="password" id="settings-new-password" placeholder="Leave blank to keep current">
@@ -785,7 +786,8 @@
       </div>
 
       <div class="modal-actions" style="margin-top: 8px;">
-        <button class="btn-secondary" onclick="processLogout()" style="background: rgba(239, 68, 68, 0.15); color: var(--danger); border: none; margin-right: auto;">Log Out</button>
+        <button class="btn-secondary" onclick="deleteAccount()" style="background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">Delete Account</button>
+        <button class="btn-secondary" onclick="processLogout()" style="background: rgba(239, 68, 68, 0.15); color: var(--danger); border: none;">Log Out</button>
         <button class="btn-secondary" onclick="closeModal('account-settings-modal')">Cancel</button>
         <button class="btn-primary" onclick="saveAccountSettings()">Save Changes</button>
       </div>
@@ -905,6 +907,7 @@
       }
 
       onSnapshot(collection(db, "accounts"), (snapshot) => {
+        accountsDb = {};
         snapshot.forEach((docSnap) => {
           accountsDb[docSnap.id] = docSnap.data();
         });
@@ -917,7 +920,7 @@
         const savedSession = localStorage.getItem('howapp_session_user');
         if (savedSession && accountsDb[savedSession.toLowerCase()] && !currentUser) {
           currentUser = {
-            username: savedSession,
+            username: accountsDb[savedSession.toLowerCase()].username || savedSession,
             avatar: accountsDb[savedSession.toLowerCase()].avatar || ''
           };
           document.getElementById('auth-modal').classList.add('hidden');
@@ -1076,19 +1079,54 @@
     };
 
     window.saveAccountSettings = async () => {
-      const acc = accountsDb[currentUser.username.toLowerCase()];
+      const oldUsername = currentUser.username;
+      const newUsername = document.getElementById('settings-username').value.trim();
       const newPasswordInput = document.getElementById('settings-new-password').value.trim();
+
+      if (!newUsername) return alert('Username cannot be empty.');
+
+      const oldKey = oldUsername.toLowerCase();
+      const newKey = newUsername.toLowerCase();
+      const acc = accountsDb[oldKey];
       const updatedPassword = newPasswordInput.length > 0 ? newPasswordInput : (acc ? acc.password : '');
       const updatedAvatar = tempAvatarBase64 || '';
 
-      await updateDoc(doc(db, "accounts", currentUser.username.toLowerCase()), {
-        password: updatedPassword,
-        avatar: updatedAvatar
-      });
+      if (newKey !== oldKey) {
+        if (accountsDb[newKey]) {
+          return alert('That username is already taken!');
+        }
+        await deleteDoc(doc(db, "accounts", oldKey));
+        await setDoc(doc(db, "accounts", newKey), {
+          username: newUsername,
+          password: updatedPassword,
+          avatar: updatedAvatar
+        });
+      } else {
+        await updateDoc(doc(db, "accounts", oldKey), {
+          username: newUsername,
+          password: updatedPassword,
+          avatar: updatedAvatar
+        });
+      }
 
+      currentUser.username = newUsername;
       currentUser.avatar = updatedAvatar;
+      localStorage.setItem('howapp_session_user', newUsername);
+
       updateUserUI();
       closeModal('account-settings-modal');
+    };
+
+    window.deleteAccount = async () => {
+      if (!confirm(`Are you sure you want to permanently delete @${currentUser.username}? This action cannot be undone.`)) {
+        return;
+      }
+
+      const userKey = currentUser.username.toLowerCase();
+      await deleteDoc(doc(db, "accounts", userKey));
+
+      localStorage.removeItem('howapp_session_user');
+      window.location.reload();
     };
 
     function listenToRooms() {
